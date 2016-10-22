@@ -2,7 +2,6 @@
   "name": "tacowasa-mobile",
   "version": "0.0.1",
   "description": "Web based user interface for mobile of tacowasa",
-  "main": "index.js",
   "scripts": {
     "build": "webpack",
     "watch": "webpack --watch",
