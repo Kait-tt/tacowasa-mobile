@@ -5,7 +5,8 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 // development
 const webpackConfig = {
     entry: {
-        index: path.join(__dirname, '/src/js/entries/index.js')
+        index: path.join(__dirname, '/src/js/entries/index.js'),
+        kanban: path.join(__dirname, '/src/js/entries/kanban.js')
     },
     output: {
         publicPath: '/',
@@ -38,6 +39,10 @@ const webpackConfig = {
     },
     plugins: [
         new webpack.optimize.CommonsChunkPlugin('common.js'),
+        new webpack.ProvidePlugin({
+            $: 'jquery',
+            jQuery: 'jquery'
+        }),
         new ExtractTextPlugin('[name].css'),
         function () {
             this.plugin('watch-run', (watching, callback) => {
