@@ -8,11 +8,23 @@ Web based user interface for mobile of tacowasa
 - npm
 
 # install
+
+## development
 ```
-git clone https://github.com/Kait-tt/tacowasa
+git clone https://github.com/Kait-tt/tacowasa-mobile
 cd tacowasa-mobile
 npm install
 npm run build
+npm link
+cd ..
+
+git clone https://github.com/Kait-tt/tacowasa
+cd tacowasa
+# see https://github.com/Kait-tt/tacowasa#development
+npm link tacowasa-mobile
+
+npm start
+# open http://localhost:3000 in browser
 ```
 
 # scripts
