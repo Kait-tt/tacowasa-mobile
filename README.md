@@ -22,6 +22,7 @@ git clone https://github.com/Kait-tt/tacowasa
 cd tacowasa
 # see https://github.com/Kait-tt/tacowasa#development
 npm link tacowasa-mobile
+# add {"path": "tacowasa-mobile"} to "addons" on config/development.json
 
 npm start
 # open http://localhost:3000 in browser
