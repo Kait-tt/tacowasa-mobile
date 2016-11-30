@@ -16,6 +16,15 @@ class Router {
             res.render(path.join(__dirname, 'views', 'kanban'));
         });
 
+	router.get('/newtask', (req, res) => {
+            res.render(path.join(__dirname, 'views', 'newtask'));
+        });
+
+    router.get('/qr_read', (req, res) => {
+            res.render(path.join(__dirname, 'views', 'qr_read'));
+        });
+
+
         parentRouter.use('/mobile', router);
 
         return {parentRouter};

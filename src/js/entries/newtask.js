@@ -1,12 +1,13 @@
-'use strict';
+﻿'use strict';
 require('babel-polyfill');
 require('../../scss/kanban.scss');
-const _ = require('lodash');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
 
+
 let project, socket;
 
+        console.log(1);
 Project.fetch(getProjectId())
     .then(_project => {
         project = _project;
@@ -14,59 +15,100 @@ Project.fetch(getProjectId())
         socket.join(project.id);
         socketInit();
 
+        project.users;
+        project.labels;
+
+        /*//add taskid get test
+        console.log(project.tasks.select(x => x.labels).filter(function(x, i, self) {
+        return self.indexOf(x) === i;
+    }));
+*/
+        console.log(2);
+
+        console.log(stage);
+        console.log(stage.value);
+        console.log(stage.text);
+        console.log(taskname);
+        console.log(description);
+        /*console.log(project.users.select(x => x.users).filter(function(x, i, self) {
+        return self.indexOf(x) === i;
+    }));*/
+
+
+        //user list add
+        /*var select = document.getElementById('userlist')
+
+        var selectBox = project.users;
+
+        for ( var i in selectBox ) {
+            var option = document.createElement('option');
+         
+            option.setAttribute('value', i);
+            option.innerHTML = selectBox[i];
+         
+            select.appendChild(option);
+        }*/
+
         attachSamples();
     })
     .catch(err => console.error(err));
 
-function attachSamples () {
-    // create task sample
-    document.getElementById('create-task').addEventListener('click', () => {
-        socket.emit('createTask', {
-            title: 'sample title',
-            body: 'sample body',
-            stageId: project.stages.find(x => x.name === 'backlog').id,
-            costId: project.costs.find(x => x.name === 'medium').id,
-            labelIds: _.sampleSize(project.labels, 2).map(x => x.id)
-        });
-    }, false);
 
-    // update task status and order sample
-    document.getElementById('update-task-status-and-order').addEventListener('click', () => {
+function attachSamples () {
+
+    document.getElementById('create-task').addEventListener('click', () => {
+
+    // var qrid = (Math.random()*(999-100)+100);
+
+
+    var taskname = document.getElementById("taskname").value;
+    var description = document.getElementById("description").value;
+    var stage = document.getElementById("stage").value;
+    var cost = document.getElementById("cost").value;
+    /*console.log(project.tasks.select(x => x.labels).filter(function(x, i, self) {
+        return self.indexOf(x) === i;
+    })); //ラベル取得*/
+    console.log(stage);//value
+
+    console.log(taskname);
+    console.log(description);
+
+    const stage2 = project.stages.find(x => x.name === stage);
+    const cost2 = project.costs.find(x => x.name === cost);
+
+    console.log(stage2);
+
+    socket.emit('createTask', {
+            // taskId: qrid,
+                title: taskname,
+                body: description,
+                stageId: stage2.id,
+                costId: cost2.id
+        });
+
+}, false);
+
+    document.getElementById('create-task-test').addEventListener('click', () => {
         const task = _.chain(project.tasks)
             .filter(x => _.includes(['issue', 'backlog'], project.stages.find(y => y.id === x.stageId).name))
             .sample()
             .value();
-        const todo = project.stages.find(x => x.name === 'todo');
+        // const task = project.tasks.find(x => x.id === qrId);
+        const todo = project.stages.find(x => x.name === 'todo'); //''←の中に
         const user = _.sample(project.users);
-        const beforeTask = _.chain(project.tasks)
-            .filter(x => x.stageId === todo.id)
-            .filter(x => x.userId === user.id)
-            .sample();
 
         socket.emit('updateTaskStatusAndOrder', {
             taskId: task.id,
-            beforeTaskId: beforeTask && beforeTask.id || null,
             updateParams: {
                 stageId: todo.id,
                 userId: user.id
             }
         });
     });
-
-    // update task content sample
-    document.getElementById('update-task-content').addEventListener('click', () => {
-        const task = _.sample(project.tasks);
-
-        socket.emit('updateTaskContent', {
-            taskId: task.id,
-            updateParams: {
-                title: task.title + ' updated',
-                body: task.body + ' updated',
-                costId: _.sample(project.costs).id
-            }
-        });
-    });
 }
+
+
+
 
 function socketInit () {
     socket.on('createTask', ({task}) => project.tasks.push(task));

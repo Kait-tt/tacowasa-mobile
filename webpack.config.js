@@ -6,7 +6,10 @@ const ExtractTextPlugin = require('extract-text-webpack-plugin');
 const webpackConfig = {
     entry: {
         index: path.join(__dirname, '/src/js/entries/index.js'),
-        kanban: path.join(__dirname, '/src/js/entries/kanban.js')
+        kanban: path.join(__dirname, '/src/js/entries/kanban.js'),
+	    newtask: path.join(__dirname, '/src/js/entries/newtask.js'),
+        qrread: path.join(__dirname, '/src/js/entries/qrread.js'),
+        gesture: path.join(__dirname, '/src/js/entries/gesture.js')
     },
     output: {
         publicPath: '/',

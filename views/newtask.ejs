@@ -1,0 +1,34 @@
+<html>
+<head>
+	<meta name="viewport" content="width=device-width" initial-scale=0.75"" charset="utf-8">
+	<title>Top</title>
+	<script src="common.js"></script>
+	<script src ="newtask.js"></script>
+</head>
+<body>
+	
+	<h1>tacowasa operation</h1>
+	<p id = "TTT">タイトル
+		<INPUT size="20" id="taskname" type="text" value="">
+	</p>
+	<p>説明</p>
+		<INPUT size="20" id="description" type="text">
+	<p>stage</p>
+		<select id="stage">
+			<option value="issue" selected>issue</option>
+			<option value="backlog">backlog</option>
+			<option value="done">done</option>
+			<option value="archive">archive</option>
+		</select>
+
+	<p>Cost</p>
+		<select id="cost">
+			<option value="undecided" selected>undecided</option>
+			<option value="low" selected>low</option>
+			<option value="medium">medium</option>
+			<option value="high">high</option>
+		</select>
+		
+		<button id="create-task">Create Task</button>
+		<button id="create-task-test">Create Task test</button>
+</body>

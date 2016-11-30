@@ -1,0 +1,26 @@
+﻿<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=0.75">
+	<meta http-equiv="content-language" content="ja">
+</head>
+<body>
+	<!-- <script src="quirc.js" async></script> -->
+
+	<title>QR Reader</title>
+	<h1>任意のタスクカードのQRを認識してください</h1>
+	<h3>Found [<span style="font-size: 40px" id="display_data"></span>]</h3>
+
+	<div id="button">
+	<p>
+		<input type ="button" value="つかむ/はなす"　onclick="Catch_release();">
+	</p>
+	</div>
+	<div id="arrow">
+	</div>
+
+	<script src="common.js"></script>
+	<script src="gesture.js"></script>
+	<script src="qrread.js"></script>
+</body>
+</html>
