@@ -1,3 +1,5 @@
+const EventEmitter2 = require('eventemitter2');
+
 var Module;
 if (!Module) Module = (typeof Module !== "undefined" ? Module : null) || {};
 var moduleOverrides = {};
@@ -7,47 +9,7 @@ var ENVIRONMENT_IS_WEB = typeof window === "object";
 var ENVIRONMENT_IS_NODE = typeof process === "object" && typeof require === "function" && !ENVIRONMENT_IS_WEB;
 var ENVIRONMENT_IS_WORKER = typeof importScripts === "function";
 var ENVIRONMENT_IS_SHELL = !ENVIRONMENT_IS_WEB && !ENVIRONMENT_IS_NODE && !ENVIRONMENT_IS_WORKER;
-if (ENVIRONMENT_IS_NODE) {
-    if (!Module["print"]) Module["print"] = function print(x) { process["stdout"].write(x + "\n") };
-    if (!Module["printErr"]) Module["printErr"] = function printErr(x) { process["stderr"].write(x + "\n") };
-    var nodeFS = "require('fs')";
-    var nodePath = "require('path')";
-    Module["read"] = function read(filename, binary) {
-        filename = nodePath["normalize"](filename);
-        var ret = nodeFS["readFileSync"](filename);
-        if (!ret && filename != nodePath["resolve"](filename)) {
-            filename = path.join(__dirname, "..", "src", filename);
-            ret = nodeFS["readFileSync"](filename)
-        }
-        if (ret && !binary) ret = ret.toString();
-        return ret
-    };
-    Module["readBinary"] = function readBinary(filename) {
-        return Module["read"](filename, true) };
-    Module["load"] = function load(f) { globalEval(read(f)) };
-    if (!Module["thisProgram"]) {
-        if (process["argv"].length > 1) { Module["thisProgram"] = process["argv"][1].replace(/\\/g, "/") } else { Module["thisProgram"] = "unknown-program" } }
-    Module["arguments"] = process["argv"].slice(2);
-    if (typeof module !== "undefined") { module["exports"] = Module }
-    process["on"]("uncaughtException", (function(ex) {
-        if (!(ex instanceof ExitStatus)) {
-            throw ex } }));
-    Module["inspect"] = (function() {
-        return "[Emscripten Module object]" })
-} else if (ENVIRONMENT_IS_SHELL) {
-    if (!Module["print"]) Module["print"] = print;
-    if (typeof printErr != "undefined") Module["printErr"] = printErr;
-    if (typeof read != "undefined") { Module["read"] = read } else { Module["read"] = function read() {
-            throw "no read() available (jsc?)" } }
-    Module["readBinary"] = function readBinary(f) {
-        if (typeof readbuffer === "function") {
-            return new Uint8Array(readbuffer(f)) }
-        var data = read(f, "binary");
-        assert(typeof data === "object");
-        return data
-    };
-    if (typeof scriptArgs != "undefined") { Module["arguments"] = scriptArgs } else if (typeof arguments != "undefined") { Module["arguments"] = arguments }
-} else if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
+if (ENVIRONMENT_IS_WEB || ENVIRONMENT_IS_WORKER) {
     Module["read"] = function read(url) {
         var xhr = new XMLHttpRequest;
         xhr.open("GET", url, false);
@@ -55,26 +17,20 @@ if (ENVIRONMENT_IS_NODE) {
         return xhr.responseText
     };
     if (typeof arguments != "undefined") { Module["arguments"] = arguments }
-    if (typeof console !== "undefined") {
-        if (!Module["print"]) Module["print"] = function print(x) { console.log(x) };
-        if (!Module["printErr"]) Module["printErr"] = function printErr(x) { console.log(x) }
-    } else {
-        var TRY_USE_DUMP = false;
-        if (!Module["print"]) Module["print"] = TRY_USE_DUMP && typeof dump !== "undefined" ? (function(x) { dump(x) }) : (function(x) {})
-    }
     if (ENVIRONMENT_IS_WORKER) { Module["load"] = importScripts }
     if (typeof Module["setWindowTitle"] === "undefined") { Module["setWindowTitle"] = (function(title) { document.title = title }) }
 } else {
-    throw "Unknown runtime environment. Where are we?" }
+    throw "The runtime environment is not supported";
+}
+
+Module.events = new EventEmitter2();
 
 function globalEval(x) { eval.call(null, x) }
 if (!Module["load"] && Module["read"]) { Module["load"] = function load(f) { globalEval(Module["read"](f)) } }
-if (!Module["print"]) { Module["print"] = (function() {}) }
-if (!Module["printErr"]) { Module["printErr"] = Module["print"] }
 if (!Module["arguments"]) { Module["arguments"] = [] }
 if (!Module["thisProgram"]) { Module["thisProgram"] = "./this.program" }
-Module.print = Module["print"];
-Module.printErr = Module["printErr"];
+Module.print = x => console.log(x);
+Module.printErr = x => console.error(x);
 Module["preRun"] = [];
 Module["postRun"] = [];
 for (var key in moduleOverrides) {
@@ -153,7 +109,7 @@ var Runtime = {
         if (!Runtime.warnOnce.shown) Runtime.warnOnce.shown = {};
         if (!Runtime.warnOnce.shown[text]) {
             Runtime.warnOnce.shown[text] = 1;
-            Module.printErr(text)
+            console.error(text)
         }
     }),
     funcWrappers: {},
@@ -684,11 +640,11 @@ function demangle(func) {
     var first = true;
 
     function dump(x) {
-        if (x) Module.print(x);
-        Module.print(func);
+        if (x) console.log(x);
+        console.log(func);
         var pre = "";
         for (var a = 0; a < i; a++) pre += " ";
-        Module.print(pre + "^")
+        console.log(pre + "^")
     }
 
     function parseNested() {
@@ -857,7 +813,7 @@ var totalMemory = 64 * 1024;
 while (totalMemory < TOTAL_MEMORY || totalMemory < 2 * TOTAL_STACK) {
     if (totalMemory < 16 * 1024 * 1024) { totalMemory *= 2 } else { totalMemory += 16 * 1024 * 1024 } }
 if (totalMemory !== TOTAL_MEMORY) {
-    Module.printErr("increasing TOTAL_MEMORY to " + totalMemory + " to be compliant with the asm.js spec (and given that TOTAL_STACK=" + TOTAL_STACK + ")");
+    console.error("increasing TOTAL_MEMORY to " + totalMemory + " to be compliant with the asm.js spec (and given that TOTAL_STACK=" + TOTAL_STACK + ")");
     TOTAL_MEMORY = totalMemory
 }
 assert(typeof Int32Array !== "undefined" && typeof Float64Array !== "undefined" && !!(new Int32Array(1))["subarray"] && !!(new Int32Array(1))["set"], "JS engine does not provide full typed array support");
@@ -1070,11 +1026,9 @@ Module["preloadedAudios"] = {};
 var memoryInitializer = null;
 var ASM_CONSTS = [(function($0) {
     {
-        if (window.counted) counted($0) } }), (function() {
+        if (Module.counted) counted($0) } }), (function() {
     {
-        var a = arguments;
-        var $i = 0;
-        if (window.decoded) decoded(a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++], a[$i++])
+        Module.events.emit('decode', {params: Array.prototype.slice.call(arguments, 0, 15)})
     }
 })];
 
@@ -1457,14 +1411,15 @@ var TTY = {
         }),
         put_char: (function(tty, val) {
             if (val === null || val === 10) {
-                Module["print"](UTF8ArrayToString(tty.output, 0));
+                console.log(UTF8ArrayToString(tty.output, 0));
                 tty.output = []
             } else {
-                if (val != 0) tty.output.push(val) }
+                if (val != 0) tty.output.push(val);
+            }
         }),
         flush: (function(tty) {
             if (tty.output && tty.output.length > 0) {
-                Module["print"](UTF8ArrayToString(tty.output, 0));
+                console.log(UTF8ArrayToString(tty.output, 0));
                 tty.output = []
             }
         })
@@ -1472,14 +1427,14 @@ var TTY = {
     default_tty1_ops: {
         put_char: (function(tty, val) {
             if (val === null || val === 10) {
-                Module["printErr"](UTF8ArrayToString(tty.output, 0));
+                console.error(UTF8ArrayToString(tty.output, 0));
                 tty.output = []
             } else {
                 if (val != 0) tty.output.push(val) }
         }),
         flush: (function(tty) {
             if (tty.output && tty.output.length > 0) {
-                Module["printErr"](UTF8ArrayToString(tty.output, 0));
+                console.error(UTF8ArrayToString(tty.output, 0));
                 tty.output = []
             }
         })
@@ -2712,7 +2667,7 @@ var FS = {
             if (!FS.readFiles) FS.readFiles = {};
             if (!(path in FS.readFiles)) {
                 FS.readFiles[path] = 1;
-                Module["printErr"]("read file: " + path)
+                console.error("read file: " + path)
             }
         }
         try {
@@ -7980,7 +7935,7 @@ Module["callMain"] = Module.callMain = function callMain(args) { assert(runDepen
         if (e instanceof ExitStatus) {
             return } else if (e == "SimulateInfiniteLoop") { Module["noExitRuntime"] = true;
             return } else {
-            if (e && typeof e === "object" && e.stack) Module.printErr("exception thrown: " + [e, e.stack]);
+            if (e && typeof e === "object" && e.stack) console.error("exception thrown: " + [e, e.stack]);
             throw e } } finally { calledMain = true } };
 
 function run(args) { args = args || Module["arguments"];
@@ -7997,7 +7952,7 @@ function run(args) { args = args || Module["arguments"];
         if (ABORT) return;
         ensureInitRuntime();
         preMain();
-        if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) { Module.printErr("pre-main prep time: " + (Date.now() - preloadStartTime) + " ms") }
+        if (ENVIRONMENT_IS_WEB && preloadStartTime !== null) { console.error("pre-main prep time: " + (Date.now() - preloadStartTime) + " ms") }
         if (Module["onRuntimeInitialized"]) Module["onRuntimeInitialized"]();
         if (Module["_main"] && shouldRunNow) Module["callMain"](args);
         postRun() }
@@ -8022,8 +7977,8 @@ Module["exit"] = Module.exit = exit;
 var abortDecorators = [];
 
 function abort(what) {
-    if (what !== undefined) { Module.print(what);
-        Module.printErr(what);
+    if (what !== undefined) { console.log(what);
+        console.error(what);
         what = JSON.stringify(what) } else { what = "" }
     ABORT = true;
     EXITSTATUS = 1;
