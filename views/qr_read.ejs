@@ -3,6 +3,7 @@
 	<meta charset="UTF-8">
 	<meta name="viewport" content="width=device-width, initial-scale=0.75">
 	<meta http-equiv="content-language" content="ja">
+	 <link rel="stylesheet" type="text/scss" href="../src/scss/kanban.scss">
 </head>
 <body>
 	<!-- <script src="quirc.js" async></script> -->
@@ -11,16 +12,24 @@
 	<h1>任意のタスクカードのQRを認識してください</h1>
 	<h3>Found [<span style="font-size: 40px" id="display_data"></span>]</h3>
 
-	<div id="button">
+
 	<p>
-		<input type ="button" value="つかむ/はなす"　onclick="Catch_release();">
-	</p>
-	</div>
+	<input type ="button" id = "catch" value="つかむ/はなす"></p>
+
+
+
 	<div id="arrow">
 	</div>
 
+	<input type="button" id = "edit" value="タスク編集" class="button5">
+
+	<select id = userlist>
+	</select>
+
+
 	<script src="common.js"></script>
-	<script src="gesture.js"></script>
 	<script src="qrread.js"></script>
+	<script src="gesture.js"></script>
+
 </body>
 </html>

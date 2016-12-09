@@ -1,14 +1,12 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 require('../../scss/kanban.scss');
-const _ = require('lodash');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
 
 
 let project, socket;
 
-        console.log(1);
 Project.fetch(getProjectId())
     .then(_project => {
         project = _project;
@@ -25,60 +23,58 @@ Project.fetch(getProjectId())
         for (var i in project.labels){
             label.push(project.labels[i].name);
         }
-        $(function() {
+
+         $(function() {
             for (var count = 0; count < label.length; count++) {
                 var plist = $('<input type="checkbox" name="listname" />').html(label[count]).val(label[count]);
                 var qlist = $('<label>').html(label[count]);
                 $("#labellist").append(plist).append(qlist);
             }
         });
-
         attachSamples();
     })
     .catch(err => console.error(err));
 
 
-function attachSamples () {
 
-    document.getElementById('create-task').addEventListener('click', () => {
+function attachSamples () {
+    document.getElementById('edit-task').addEventListener('click', () => {
 
     var taskname = document.getElementById("taskname").value;
     var description = document.getElementById("description").value;
-    var stage = document.getElementById("stage").value;
     var cost = document.getElementById("cost").value;
 
-
-
-    const stage2 = project.stages.find(x => x.name === stage);
-    const cost2 = project.costs.find(x => x.name === cost);
-
-
-
-
-    var labellist2 = [];
+     var labellist2 = [];
     $('[name="listname"]:checked').each(function(){
         labellist2.push(project.labels.find(x => x.name === $(this).val()));
         // labellist2.push($(this).val());
     });
 
-    console.log(labellist2);
-    // labellist2.push(project.labels.find(x => x.name === labelname));
-
+    const cost2 = project.costs.find(x => x.name === cost);
     const label2 = labellist2.map(x => x.id);
 
+    var test = gettaskId();
 
-    socket.emit('createTask', {
+
+    socket.emit('updateTaskContent', {
+             taskId: gettaskId(),
+              updateParams: {
                 title: taskname,
                 body: description,
-                stageId: stage2.id,
-                costId: cost2.id,
-                labelIds: label2
+                costId: cost2.id
+            }
+        });
+
+    socket.emit('attachLabel', {
+             taskId: gettaskId(),
+             updateParams: {
+             labelIds: label2
+         }
         });
 
 }, false);
 
 }
-
 
 
 
@@ -146,5 +142,13 @@ function getProjectId () {
     if (!search) { return null; }
     const qs = search.slice(1).split('&').map(q => q.split('='));
     const q = qs.find(x => x.length && x[0] === 'projectId');
+    return q && q.length > 1 && q[1] || null;
+}
+
+function gettaskId () {
+    const search = location.search;
+    if (!search) { return null; }
+    const qs = search.slice(1).split('&').map(q => q.split('='));
+    const q = qs.find(x => x.length && x[0] === 'taskId');
     return q && q.length > 1 && q[1] || null;
 }

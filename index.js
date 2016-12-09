@@ -24,6 +24,10 @@ class Router {
             res.render(path.join(__dirname, 'views', 'qr_read'));
         });
 
+    router.get('/edit', (req, res) => {
+            res.render(path.join(__dirname, 'views', 'edit'));
+        });
+
 
         parentRouter.use('/mobile', router);
 

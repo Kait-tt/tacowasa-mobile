@@ -9,6 +9,7 @@ const webpackConfig = {
         kanban: path.join(__dirname, '/src/js/entries/kanban.js'),
 	    newtask: path.join(__dirname, '/src/js/entries/newtask.js'),
         qrread: path.join(__dirname, '/src/js/entries/qrread.js'),
+        edit: path.join(__dirname, '/src/js/entries/edit.js'),
         gesture: path.join(__dirname, '/src/js/entries/gesture.js')
     },
     output: {

@@ -18,6 +18,8 @@ var DATA = {
     4: 'KANJI'
 };
 
+var QRCODE;
+
 function log() {
     if (!DEBUG) return;
     var now = Date.now();
@@ -55,13 +57,15 @@ Module.events.on('decode', function ({params: [i, version, ecc_level, mask, data
     var buffer = read(payload, payload_len);
     var str = String.fromCharCode.apply(null, buffer);
     log("Data:", str);
-
+    QRCODE =str;
+    localStorage.setItem('qrcode',str);
     if (str) {
         if (str.startsWith('http')) {
             str = '<a href="' + str + '">' + str + '</a>';
         }
-        if (i == 0) display_data.innerHTML = str;
-        else display_data.innerHTML += '<br/>' + str;
+        // if (i == 0)
+        display_data.innerHTML = str;
+        // else display_data.innerHTML += '<br/>' + str;
     }
 
     ctx.beginPath();
