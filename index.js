@@ -16,15 +16,15 @@ class Router {
             res.render(path.join(__dirname, 'views', 'kanban'));
         });
 
-	router.get('/newtask', (req, res) => {
+        router.get('/newtask', (req, res) => {
             res.render(path.join(__dirname, 'views', 'newtask'));
         });
 
-    router.get('/qr_read', (req, res) => {
+        router.get('/qr_read', (req, res) => {
             res.render(path.join(__dirname, 'views', 'qr_read'));
         });
 
-    router.get('/edit', (req, res) => {
+        router.get('/edit', (req, res) => {
             res.render(path.join(__dirname, 'views', 'edit'));
         });
 

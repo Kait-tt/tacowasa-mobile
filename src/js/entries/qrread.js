@@ -2,49 +2,49 @@
 require('babel-polyfill');
 const Module = require('../models/quirc');
 
-var last = Date.now();
-var DEBUG = 0;
-var ECC = {
+let last = Date.now();
+const DEBUG = 0;
+const ECC = {
     0: 'M',
     1: 'L',
     2: 'H',
     3: 'Q'
 };
 
-var DATA = {
+const DATA = {
     1: 'NUMERIC',
     2: 'ALPHA',
     3: 'BYTE',
     4: 'KANJI'
 };
 
-var QRCODE;
+let QRCODE;
 
 function log() {
     if (!DEBUG) return;
-    var now = Date.now();
-    var args = Array.prototype.slice.call(arguments);
+    const now = Date.now();
+    const args = Array.prototype.slice.call(arguments);
     args.unshift('+' + (now - last) + 'ms');
     console.log.apply(console, args);
     last = now;
 }
 
-var data, image;
-var ctx, width, height;
+let data, image;
+let ctx, width, height;
 
 function gofill() {
     /* Fill out the image buffer here.
      * image is a pointer to a w*h bytes.
      * One byte per pixel, w pixels per line, h lines in the buffer.
      */
-    log('gofill')
-    for (var i = 0, j = 0; i < data.length; i += 4, j++) {
+    log('gofill');
+    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
         Module.HEAPU8[image + j] = 0.2989 * data[i + 0] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2];
     }
 
     log('writing');
 
-    var a = Module._xprocess();
+    const a = Module._xprocess();
     log('quirc_end', a);
 }
 
@@ -54,8 +54,8 @@ function counted(n) {
 
 Module.events.on('decode', function ({params: [i, version, ecc_level, mask, data_type, payload, payload_len,
 	x0, y0, x1, y1, x2, y2, x3, y3]}) {
-    var buffer = read(payload, payload_len);
-    var str = String.fromCharCode.apply(null, buffer);
+    const buffer = read(payload, payload_len);
+    let str = String.fromCharCode.apply(null, buffer);
     log("Data:", str);
     QRCODE =str;
     localStorage.setItem('qrcode',str);
@@ -94,27 +94,38 @@ function read(offset, len) {
 }
 
 // start
-var video = document.createElement('video');
+const video = document.createElement('video');
 video.autoplay = true;
 
-navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+if (!navigator.mediaDevices && (navigator.mozGetUserMedia || navigator.webkitGetUserMedia)) {
+    navigator.mediaDevices = {
+        getUserMedia: (c) => {
+            return new Promise((y, n) => (navigator.mozGetUserMedia || navigator.webkitGetUserMedia).call(navigator, c, y, n));
+        }
+    };
+}
 
-var tw = 640 // 320 // 640 // 1280;
-var th = 480 // 240 // 480 // 720
-
-var hdConstraints = {
+const hdConstraints = {
     audio: false,
     video: {
-        optional: [{ sourceId: "8fd5cd7889ba15ce0603b79bc187ce8f283b89dc7c992b053a0edf17589c2f45" }],
         mandatory: {
-            maxWidth: tw,
-            maxHeight: th
+            maxWidth: 640,
+            maxHeight: 480
         }
     }
 };
 
-if (navigator.getUserMedia) {
-    navigator.getUserMedia(hdConstraints, success, errorCallback);
+if (navigator.mediaDevices && MediaStreamTrack) {
+    MediaStreamTrack.getSources(data => {
+        const cameras = data.filter(x => x.kind === 'video');
+        if (!cameras.length) { return errorCallback(''); }
+        const backCamera = cameras.find(x => x.facing === 'environment');
+
+        hdConstraints.video.optional = [{sourceId: backCamera ? backCamera.id : cameras[0].id}];
+        navigator.mediaDevices.getUserMedia(hdConstraints)
+            .then(success)
+            .catch(errorCallback);
+    });
 } else {
     errorCallback('');
 }
@@ -135,10 +146,11 @@ function success(stream) {
         if (!video.videoWidth) return;
 
         if (!image) {
-            width = video.videoWidth, height = video.videoHeight;
+            width = video.videoWidth;
+            height = video.videoHeight;
             log('video', width, height, video);
 
-            var canvas = document.createElement('canvas');
+            const canvas = document.createElement('canvas');
             canvas.width = width;
             canvas.height = height;
 
@@ -150,9 +162,9 @@ function success(stream) {
             log('_xsetup', image, 'pointer');
             return;
         }
-        log('interval')
+        log('interval');
         ctx.drawImage(video, 0, 0, width, height);
-        var imageData = ctx.getImageData(0, 0, width, height);
+        const imageData = ctx.getImageData(0, 0, width, height);
         data = imageData.data;
         gofill();
     }
