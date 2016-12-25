@@ -71,7 +71,9 @@ function onGetUserMedia (stream) {
 
         ctx.putImageData(image2, 0, 0);
 
-        findQRCode(snapshot, width, height);
+        const qrs = findQRCode(snapshot, width, height);
+        const nums = qrs.map(x => x.num);
+        console.log(nums);
     }
 
     getFrame();
@@ -130,8 +132,9 @@ function compressAndDecompress (src, dist, width, height) {
 
 function findQRCode (src, width, height) {
     const candidates1 = [];
+    const candidatesMemo = {};
 
-    for (let y = Math.round(height / 2); y >= 0; y--) {
+    for (let y = 0; y < height; y++) {
         const line = [];
         let b = src[y * width] === 0;
         let cnt = 1;
@@ -162,14 +165,11 @@ function findQRCode (src, width, height) {
             const x1 = ts[0].pos;
             const x2 = ts[4].pos + ts[4].cnt;
             const xc = Math.round((x1 + x2) / 2);
+            const key = `${Math.round(xc / (width / 10))}_${Math.round(y / (height / 10))}`;
+            if (candidatesMemo[key]) { continue; }
+            candidatesMemo[key] = true;
             candidates1.push({x1, x2, xc, yc: y});
         }
-
-        {
-
-        }
-
-        break;
     }
 
     const candidates2 = [];
@@ -222,12 +222,12 @@ function findQRCode (src, width, height) {
         h: (y2 * 2 - y1 * 2) * 1.05
     }));
 
-    rects.forEach(({x1, y1, w, h}) => {
-        ctx.strokeStyle = '#f00';
-        ctx.strokeRect(x1, y1, w, h);
-    });
+    // rects.forEach(({x1, y1, w, h}) => {
+    //     ctx.strokeStyle = '#f00';
+    //     ctx.strokeRect(x1, y1, w, h);
+    // });
 
-    const res = rects.map(({x1, y1, w, h}) => {
+    return rects.map(({x1, y1, w, h}) => {
         const dw = w / 8;
         const dh = h / 8;
         const sw = Math.ceil(dw / 4);
@@ -246,13 +246,13 @@ function findQRCode (src, width, height) {
                         else { ++cntw; }
                     }
                 }
-                ctx.fillStyle = '#0f0';
-                ctx.fillRect(Math.floor(x1 + dw + dw * xi * 2 - sw / 2), Math.floor(y1 + dh + dh * yi * 2 - sh / 2), sw, sh);
+                // ctx.fillStyle = '#0f0';
+                // ctx.fillRect(Math.floor(x1 + dw + dw * xi * 2 - sw / 2), Math.floor(y1 + dh + dh * yi * 2 - sh / 2), sw, sh);
                 nums.push(cntb >= cntw ? 1 : 0);
             }
         }
-        console.log(nums);
-        return nums.reduce((res, v) => (res * 2 + v), 0);
+        const num = nums.reduce((res, v) => (res * 2 + v), 0);
+        return {num, x1, y1, w, h};
     });
 
 }
