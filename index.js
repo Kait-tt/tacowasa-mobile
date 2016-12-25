@@ -28,6 +28,10 @@ class Router {
             res.render(path.join(__dirname, 'views', 'edit'));
         });
 
+        router.get('/test', (req, res) => {
+            res.render(path.join(__dirname, 'views', 'test'));
+        });
+
 
         parentRouter.use('/mobile', router);
 

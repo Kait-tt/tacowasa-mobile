@@ -10,7 +10,8 @@ const webpackConfig = {
 	    newtask: path.join(__dirname, '/src/js/entries/newtask.js'),
         qrread: path.join(__dirname, '/src/js/entries/qrread.js'),
         edit: path.join(__dirname, '/src/js/entries/edit.js'),
-        gesture: path.join(__dirname, '/src/js/entries/gesture.js')
+        gesture: path.join(__dirname, '/src/js/entries/gesture.js'),
+        test: path.join(__dirname, '/src/js/entries/test.js')
     },
     output: {
         publicPath: '/',
