@@ -16,35 +16,43 @@ const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
 
 const multiple_scroll = 100;
 
+const el_hitarea = document.getElementById('hitarea');
+const el_eventname = document.getElementById('eventname');
 
-// 要素ら
+let isMotion = false;
+let isCatch = false;
 
-var el_hitarea = document.getElementById('hitarea');
-var el_eventname = document.getElementById('eventname');
-var el_x = document.getElementById('x');
-var el_y = document.getElementById('y');
+let didFirstTap = false;
 
-var isMotion = false;
-var isCatch = false;
-// 表示をアップデートする関数群
-
-var didFirstTap = false;
-
-var updateXY = function(event) {
-    el_x.innerHTML = event.changedTouches[0].pageX;
-    el_y.innerHTML = event.changedTouches[0].pageY;
-};
-var updateEventname = function(eventname) {
+const updateEventname = function(eventname) {
     el_eventname.innerHTML = eventname;
 };
+
+
+Project.fetch(projectId)
+    .then(_project => {
+        project = _project;
+        socket = new Socket();
+        socket.join(project.id);
+        socketInit();
+
+        const $userList = $('#userlist');
+        project.users.forEach(user => {
+            const $item = $('<option>').html(user.username).val(user.username);
+            $userList.append($item);
+        });
+
+        myQRReader.start();
+    })
+    .catch(err => console.error(err));
 
 
 
 //emit hover pick
 
-var didqr;
+let didqr;
 
-var content = null;
+let content = null;
 $(document).ready(function() {
     $('#sample').on('DOMSubtreeModified propertychange', function() {
         alert('Change!');
@@ -98,20 +106,18 @@ el_hitarea.addEventListener('touchstart', function(event) {
 
 }, false);
 
+let beforeX = null;
+let beforeY = null;
 el_hitarea.addEventListener('touchmove', function(event) {
     event.preventDefault();
-    var didy= el_y.textContent;
-    var didx =el_x.textContent;
-    var dify = event.changedTouches[0].pageY;
-    var difx = event.changedTouches[0].pageX;
+    const {pageX: x, pageY: y} = event.changedTouches[0];
 
-    var center = new Vector(270,470);
-    var firstP = new Vector(didx,didy);
-    var afterP = new Vector(difx,dify);
+    var center = new Vector(270, 470);
+    var firstP = new Vector(beforeX, beforeY);
+    var afterP = new Vector(x, y);
     var dist = Vector.calcMoveAngle(firstP,center,afterP) * multiple_scroll;
 
-    updateXY(event);
-
+    ([beforeX, beforeY] = [x, y]);
 
     if (didqr) {
         var qrid = didqr;
@@ -133,51 +139,14 @@ el_hitarea.addEventListener('touchmove', function(event) {
 
 el_hitarea.addEventListener('touchend', function(event) {
     updateEventname('touchend');
-    updateXY(event);
     el_hitarea.style.backgroundColor = 'blue';
     isCatch = false;
     socket.emit('qrPick', {taskId: null});
 }, false);
 
 
-
-
-Project.fetch(getProjectId())
-    .then(_project => {
-        project = _project;
-        socket = new Socket();
-        socket.join(project.id);
-        socketInit();
-
-        var user = [];
-
-        for (var i in project.users) {
-            user.push(project.users[i].username);
-        }
-
-        $(function() {
-            var count, d, plist;
-            for (count = 0; count < user.length; count++) {
-                plist = $('<option>').html(user[count]).val(user[count]);
-                $("#userlist").append(plist);
-            }
-        });
-
-        myQRReader.start();
-    })
-    .catch(err => console.error(err));
-
 // DeviceMotion Event
 window.addEventListener("devicemotion", devicemotionHandler, false);
-
-function Edit_task(event) {
-    if (didqr) {
-        location.href = `/mobile/edit?projectId=${projectId}&taskId=${didqr}`;
-    } else {
-        alert("タスクのQRコードを認識してください");
-    }
-}
-
 
 const moveStageDebounced = _.debounce(moveStage, 1000);
 
