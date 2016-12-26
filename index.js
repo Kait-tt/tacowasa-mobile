@@ -28,8 +28,12 @@ class Router {
             res.render(path.join(__dirname, 'views', 'edit'));
         });
 
-        router.get('/test', (req, res) => {
-            res.render(path.join(__dirname, 'views', 'test'));
+        router.get('/test_qrreader', (req, res) => {
+            res.render(path.join(__dirname, 'views', 'test_qrreader'));
+        });
+
+        router.get('/test_gesture', (req, res) => {
+            res.render(path.join(__dirname, 'views', 'test_gesture'));
         });
 
 

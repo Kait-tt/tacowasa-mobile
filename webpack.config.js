@@ -11,7 +11,8 @@ const webpackConfig = {
         qrread: path.join(__dirname, '/src/js/entries/qrread.js'),
         edit: path.join(__dirname, '/src/js/entries/edit.js'),
         gesture: path.join(__dirname, '/src/js/entries/gesture.js'),
-        test: path.join(__dirname, '/src/js/entries/test.js')
+        test_qrreader: path.join(__dirname, '/src/js/entries/test_qrreader.js'),
+        test_gesture: path.join(__dirname, '/src/js/entries/test_gesture.js')
     },
     output: {
         publicPath: '/',
