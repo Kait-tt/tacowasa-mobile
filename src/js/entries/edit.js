@@ -4,11 +4,14 @@ require('../../scss/kanban.scss');
 const _ = require('lodash');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
+const Util = require('../modules/util');
+
+const {projectId, taskId} = Util.parseURLQuery();
 
 
 let project, socket;
 
-Project.fetch(getProjectId())
+Project.fetch(projectId)
     .then(_project => {
         project = _project;
         socket = new Socket();
@@ -58,9 +61,9 @@ function attachSamples () {
 
     // const attachLabels = _.difference(label2, gettask.labels());
 
-    socket.emit('updateTaskContent', {
-             taskId: gettaskId(),
-              updateParams: {
+        socket.emit('updateTaskContent', {
+            taskId,
+            updateParams: {
                 title: taskname,
                 body: description,
                 costId: cost2.id
@@ -136,20 +139,4 @@ function socketInit () {
     socket.on('operationError', res => {
         console.error('操作エラー', res);
     });
-}
-
-function getProjectId () {
-    const search = location.search;
-    if (!search) { return null; }
-    const qs = search.slice(1).split('&').map(q => q.split('='));
-    const q = qs.find(x => x.length && x[0] === 'projectId');
-    return q && q.length > 1 && q[1] || null;
-}
-
-function gettaskId () {
-    const search = location.search;
-    if (!search) { return null; }
-    const qs = search.slice(1).split('&').map(q => q.split('='));
-    const q = qs.find(x => x.length && x[0] === 'taskId');
-    return q && q.length > 1 && q[1] || null;
 }

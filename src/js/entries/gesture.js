@@ -7,6 +7,9 @@ const MyQRReader = require('../models/myqrreader');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
 const Vector = require('../models/vector');
+const Util = require('../modules/util');
+
+const {projectId} = Util.parseURLQuery();
 
 let project, socket;
 const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
@@ -73,7 +76,7 @@ el_hitarea.addEventListener('touchstart', function(event) {
     } else {
         console.log("ダブルタップ");
         if (didqr) {
-            location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId=" + didqr;
+            location.href = `/mobile/edit?projectId=${projectId}&taskId=${didqr}`;
         } else {
             console.log("qrコードを認識してください")
         }
@@ -169,7 +172,7 @@ window.addEventListener("devicemotion", devicemotionHandler, false);
 
 function Edit_task(event) {
     if (didqr) {
-        location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId=" + didqr;
+        location.href = `/mobile/edit?projectId=${projectId}&taskId=${didqr}`;
     } else {
         alert("タスクのQRコードを認識してください");
     }
@@ -359,14 +362,4 @@ function socketInit() {
     socket.on('operationError', res => {
         console.error('操作エラー', res);
     });
-}
-
-function getProjectId() {
-    const search = location.search;
-    if (!search) {
-        return null;
-    }
-    const qs = search.slice(1).split('&').map(q => q.split('='));
-    const q = qs.find(x => x.length && x[0] === 'projectId');
-    return q && q.length > 1 && q[1] || null;
 }
