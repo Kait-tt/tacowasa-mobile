@@ -4,12 +4,13 @@ require('jquery.transit');
 require('../../scss/kanban.scss');
 
 const _ = require('lodash');
-const qrread = require('./qrread');
+const MyQRReader = require('../models/myqrreader');
 
 const Project = require('../models/project');
 const Socket = require('../models/socket');
 
 let project, socket;
+const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
 
 const multiple_scroll = 100;
 
@@ -51,20 +52,10 @@ $(document).ready(function() {
     });
 });
 
-let recognituionTimeoutId = null;
-qrread.events.on('recognition', ({ data }) => {
-    if (!isCatch && didqr !== data) {
-        didqr = data;
-        socket.emit('qrHover', { taskId: Number(didqr) });
-
-        if (recognituionTimeoutId) {
-            clearTimeout(recognituionTimeoutId);
-        }
-
-        recognituionTimeoutId = setTimeout(() => {
-            data = null;
-            socket.emit('qrHover', { taskId: null });
-        }, 5000);
+myQRReader.on('recognized', ({qrs, qr, lastNum}) => {
+    if (!isCatch && didqr !== lastNum) {
+        didqr = lastNum;
+        socket.emit('qrHover', { taskId: Number(lastNum) });
     }
 });
 
@@ -195,15 +186,11 @@ Project.fetch(getProjectId())
         socket.join(project.id);
         socketInit();
 
-        project.users;
-        project.labels;
-
         var user = [];
 
         for (var i in project.users) {
             user.push(project.users[i].username);
         }
-
 
         $(function() {
             var count, d, plist;
@@ -213,6 +200,7 @@ Project.fetch(getProjectId())
             }
         });
 
+        myQRReader.start();
     })
     .catch(err => console.error(err));
 
