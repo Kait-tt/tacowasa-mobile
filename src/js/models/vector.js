@@ -23,7 +23,7 @@ class Vector {
     }
 
     // pcを中心としてp1からp2への回転距離
-    // sign(asin(a x b) / |a| / |b|)) * √|c|
+    // sign(asin(|a x b| / |a| / |b|)) * √|c|
     //   a = p1 - pc
     //   b = p2 - pc
     //   c = p1 - p2
@@ -31,7 +31,7 @@ class Vector {
         const a = Vector.sub(p1, pc);
         const b = Vector.sub(p2, pc);
         const c = Vector.sub(p1, p2);
-        const theta = Vector.cross(a, b) / a.norm / b.norm;
+        const theta = Math.asin(Vector.cross(a, b) / a.norm / b.norm);
         const sign = Math.sign(theta);
         const dist = Math.sqrt(c.norm);
         return sign * dist;

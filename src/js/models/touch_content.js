@@ -45,14 +45,17 @@ class TouchContent extends EventEmitter2 {
         this.emit('touchMove', {e});
 
         const {pageX: x, pageY: y} = e.changedTouches[0];
-        const centerP = new Vector(270, 470); // TODO: fix position
-        const beforeP = new Vector(this.moveBeforeX, this.moveBeforeY);
-        const afterP = new Vector(x, y);
-        const dist = Vector.calcMoveAngle(beforeP, afterP, centerP);
 
-        this.emit('moveCircle', {dist});
+        if (this.moveBeforeX && this.moveBeforeY) {
+            const centerP = new Vector(270, 470); // TODO: fix position
+            const beforeP = new Vector(this.moveBeforeX, this.moveBeforeY);
+            const afterP = new Vector(x, y);
+            const dist = Vector.calcMoveAngle(beforeP, afterP, centerP);
 
-        ([this.beforeMoveX, this.beforemoveY] = [x, y]);
+            this.emit('moveCircle', {dist});
+        }
+
+        ([this.moveBeforeX, this.moveBeforeY] = [x, y]);
     }
 }
 
