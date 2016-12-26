@@ -1,6 +1,9 @@
 ﻿'use strict';
 require('babel-polyfill');
 const Module = require('../models/quirc');
+const EventEmitter2 = require('eventemitter2');
+
+const events = new EventEmitter2();
 
 var last = Date.now();
 var DEBUG = 0;
@@ -58,13 +61,13 @@ Module.events.on('decode', function ({params: [i, version, ecc_level, mask, data
     var str = String.fromCharCode.apply(null, buffer);
     log("Data:", str);
     QRCODE =str;
-    localStorage.setItem('qrcode',str);
     if (str) {
         if (str.startsWith('http')) {
             str = '<a href="' + str + '">' + str + '</a>';
         }
         // if (i == 0)
         display_data.innerHTML = str;
+        events.emit('recognition', {data: str})
         // else display_data.innerHTML += '<br/>' + str;
     }
 
@@ -130,32 +133,36 @@ function success(stream) {
     video.play();
 
     function getFrame() {
-        requestAnimationFrame(getFrame);
+        if (video.videoWidth) {
+            if (!image) {
+                width = video.videoWidth, height = video.videoHeight;
+                log('video', width, height, video);
 
-        if (!video.videoWidth) return;
+                var canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
 
-        if (!image) {
-            width = video.videoWidth, height = video.videoHeight;
-            log('video', width, height, video);
+                ctx = canvas.getContext('2d');
+                document.body.appendChild(canvas);
 
-            var canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-
-            ctx = canvas.getContext('2d');
-            document.body.appendChild(canvas);
-
-            log('start');
-            image = Module._xsetup(width, height);
-            log('_xsetup', image, 'pointer');
-            return;
+                log('start');
+                image = Module._xsetup(width, height);
+                log('_xsetup', image, 'pointer');
+            } else {
+                log('interval')
+                ctx.drawImage(video, 10, 10, width, height);
+                var imageData = ctx.getImageData(0, 0, width, height);
+                data = imageData.data;
+                gofill();
+            }
         }
-        log('interval')
-        ctx.drawImage(video, 0, 0, width, height);
-        var imageData = ctx.getImageData(0, 0, width, height);
-        data = imageData.data;
-        gofill();
+
+        requestAnimationFrame(getFrame);
     }
 
     getFrame();
 }
+
+module.exports = {
+    events
+};
