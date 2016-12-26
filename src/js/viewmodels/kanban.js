@@ -8,6 +8,70 @@ class Kanban {
         this.socketInit();
     }
 
+    stepStage (taskId, selectUsername, step) {
+        const {tasks, stages, users} = this.project;
+
+        const task = tasks.find(x => String(x.id) === String(taskId));
+        const currentStage = stages.find(x => x.id === task.stageId);
+        const currentPos = stages.indexOf(currentStage);
+        const afterPos = currentPos + step;
+
+        const selectUser = users.find(x => x.username === selectUsername);
+
+        if ( afterPos < 0 || afterPos >= stages.length) {
+            // 次のステージには行けない
+            return;
+        }
+        const afterStage = stages[afterPos];
+
+        let afterUserId;
+        if (afterStage.assigned) {
+            if (task.userId == null) {
+                afterUserId = selectUser.id;
+            } else {
+                afterUserId = task.userId;
+            }
+        } else {
+            afterUserId = null;
+        }
+
+        this.socket.emit('updateTaskStatus', {
+            taskId,
+            updateParams: {
+                stageId: afterStage.id,
+                userId: afterUserId
+            }
+        });
+    }
+
+    stepAssign (taskId, step) {
+        const {tasks, stages, users} = this.project;
+
+        const task = tasks.find(x => String(x.id) === String(taskId));
+        const currentStage = stages.find(x => x.id === task.stageId);
+
+        if (!currentStage.assigned) { return; } // task is not assigned
+
+        let user = users.find(x => x.id === task.userId);
+        const stepKey = step > 0 ? 'nextMemberId' : 'prevMemberId';
+        // TODO: check WIP
+        while (user) {
+            const memberId = user.member[stepKey];
+            if (!memberId) { break; }
+            user = users.find(x => x.member.memberId === memberId);
+        }
+
+        if (!user) { return; }
+
+        socket.emit('updateTaskStatus', {
+            taskId: taskId,
+            updateParams: {
+                stageId: currentStage.id,
+                userId: user.id
+            }
+        });
+    }
+
     socketInit () {
         const {socket, project} = this;
 

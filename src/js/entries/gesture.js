@@ -181,95 +181,16 @@ function moveStage(dir) {
     setTimeout(() => { isMotion = false; }, 2000);
 }
 
-function right() {
-    console.log("right");
-    var qrid = didqr;
-    const task = project.tasks.find(x => String(x.id) === qrid);
-    const currentStage = project.stages.find(x => x.id === task.stageId);
-    const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
-    const currentPos = stageNames.indexOf(currentStage.name);
-    const afterPos = currentPos + 1;
-
-    var username = document.getElementById("userlist").value;
-    const selectUser = project.users.find(x => x.username === username);
-
-    if (afterPos >= stageNames.length) {
-        // 次のステージには行けない
-    }
-    const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
-
-    let afterUserId;
-    if (afterStage.assigned) {
-        if (task.userId == null) {
-            afterUserId = selectUser.id;
-        } else {
-            afterUserId = task.userId;
-        }
-    } else {
-        afterUserId = null;
-    }
-    socket.emit('updateTaskStatusAndOrder', {
-        taskId: qrid,
-        updateParams: {
-            stageId: afterStage.id,
-            userId: afterUserId
-        }
-    });
+function right () {
+    const selectUsername = document.getElementById('userlist').value;
+    kanban.stepStage(didqr, selectUsername, 1);
 }
 
-function left() {
-    console.log("left");
-    var qrid = didqr;
-    const task = project.tasks.find(x => String(x.id) === qrid);
-    const currentStage = project.stages.find(x => x.id === task.stageId);
-    const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
-    const currentPos = stageNames.indexOf(currentStage.name);
-    const afterPos = currentPos - 1;
-    if (afterPos == 0) {
-        // 次のステージには行けない
-    }
-    const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
-
-    let afterUserId;
-    if (afterStage.assigned) {
-        if (currentStage.assigned) {
-            afterUserId = task.userId;
-        } else {
-            // アサインする場合
-        }
-    } else {
-        afterUserId = null;
-    }
-
-    socket.emit('updateTaskStatusAndOrder', {
-        taskId: qrid,
-        updateParams: {
-            stageId: afterStage.id,
-            userId: afterUserId
-        }
-    });
-
+function left () {
+    const selectUsername = document.getElementById('userlist').value;
+    kanban.stepStage(didqr, selectUsername, 1);
 }
 
-function down(){
-    console.log("down");
-
-    var qrid = didqr;
-    const task = project.tasks.find(x => String(x.id) === qrid);
-    const currentStage = project.stages.find(x => x.id === task.stageId);
-
-    var username = document.getElementById("userlist").value;
-    const user = project.users.find(x => x.username === username);
-    let nextUserId = null;
-    if (!user.nextMemberId) {
-        const nextUser = project.users.find(x => x.member.id === user.member.nextMemberId);
-        nextUserId = nextUser.id;
-    }
-    socket.emit('updateTaskStatusAndOrder', {
-        taskId: qrid,
-        updateParams: {
-            stageId: currentStage.id,
-            userId: nextUserId
-        }
-    });
+function down () {
+    kanban.stepAssign(didqr, 1);
 }
