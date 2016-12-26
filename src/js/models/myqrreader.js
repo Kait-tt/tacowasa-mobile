@@ -13,7 +13,7 @@ if (!navigator.mediaDevices && (navigator.mozGetUserMedia || navigator.webkitGet
 }
 
 class MyQRReader extends EventEmitter2 {
-    constructor ({eventEmitter2Options = {}} = {}) {
+    constructor ({lastQRsSize = 20, binThreshold = 125} = {}, {eventEmitter2Options = {}} = {}) {
         super(eventEmitter2Options);
         this.video = document.createElement('video');
         this.video.autoplay = true;
@@ -22,6 +22,9 @@ class MyQRReader extends EventEmitter2 {
         this.height = 0;
         this.ctx = null;
         this.snapshot = null;
+        this.lastQRs = [];
+        this.lastQRsSize = lastQRsSize;
+        this.binThreshold = binThreshold;
     }
 
     createHdConstraints ({width = 640, height = 480, frameRate = 10, optional = []} = {}) {
@@ -84,24 +87,45 @@ class MyQRReader extends EventEmitter2 {
             this.snapshot = new Uint8ClampedArray(this.width * this.height);
         }
 
-        this.ctx.drawImage(this.video, 0, 0, this.width, this.height);
-        const imageData = this.ctx.getImageData(0, 0, this.width, this.height);
+        const {width: w, height: h} = this;
+
+        this.ctx.drawImage(this.video, 0, 0, w, h);
+        const imageData = this.ctx.getImageData(0, 0, w, h);
         this.emit('capture', {imageData});
 
-        binarize(imageData.data, this.snapshot, this.width, this.height);
-        compressAndDecompress(this.snapshot, this.snapshot, this.width, this.height);
+        binarize(imageData.data, this.snapshot, w, h, {binThreshold: this.binThreshold});
+        compressAndDecompress(this.snapshot, this.snapshot, w, h);
 
-        const qrs = findQRCode(this.snapshot, this.width, this.height);
-        this.emit('recognized', {qrs});
+        // {num, x, y, w, h}
+        const qrs = findQRCode(this.snapshot, w, h);
+
+        const centerQR = _.minBy(qrs.map(qr => {
+            const dx = qr.x + qr.w / 2 - w;
+            const dy = qr.y + qr.w / 2 - w;
+            const dist = dx * dx + dy * dy;
+            return {dist, qr};
+        }), 'dist');
+        const qr = centerQR ? centerQR.qr : null;
+        this.lastQRs.unshift(qr);
+        while (this.lastQRs.length > this.lastQRsSize) { this.lastQRs.pop(); }
+        const lastNum = _.chain(this.lastQRs)
+            .compact()
+            .map('num')
+            .countBy()
+            .toPairs()
+            .maxBy(x => x[1])
+            .value();
+
+        this.emit('recognized', {qrs, qr, lastNum: lastNum ? lastNum[0] : null});
     }
 }
 
-function binarize (src, dist, width, height) {
+function binarize (src, dist, width, height, {binThreshold = 125} = {}) {
     for (let y = 0; y < height; y++) {
         for (let x = 0; x < width; x++) {
             const pos = (y * width + x) * 4;
             const gray = 0.2989 * src[pos] + 0.5870 * src[pos + 1] + 0.1140 * src[pos + 2];
-            dist[y * width + x] = gray < 125 ? 0 : 255;
+            dist[y * width + x] = gray < binThreshold ? 0 : 255;
         }
     }
 }
@@ -253,7 +277,7 @@ function findQRCode (src, width, height) {
                 }
             }
             const num = _.reverse(nums).reduce((res, v) => (res * 2 + v), 0);
-            return {num, x1, y1, w, h};
+            return {num, x: x1, y: y1, w, h};
         })
         .compact()
         .uniqBy('num')
