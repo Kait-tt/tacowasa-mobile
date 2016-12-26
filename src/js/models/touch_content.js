@@ -3,11 +3,13 @@ const EventEmitter2 = require('eventemitter2');
 const Vector = require('../models/vector');
 
 class TouchContent extends EventEmitter2 {
-    constructor (context, eventEmitterOptions = {}) {
+    constructor (context, {sleepFirstTocuh = 350} = {}, eventEmitterOptions = {}) {
         super(eventEmitterOptions);
         this.context = context;
         this.moveBeforeX = null;
         this.moveBeforeY = null;
+        this.firstTouch = true;
+        this.sleepFirstTocuh = sleepFirstTocuh;
         this.initEvents();
     }
 
@@ -23,6 +25,14 @@ class TouchContent extends EventEmitter2 {
 
         this.moveBeforeX = null;
         this.moveBeforeY = null;
+
+        if (this.firstTouch) {
+            this.firstTouch = false;
+            setTimeout(() => { this.firstTouch = true; }, this.sleepFirstTocuh);
+        } else {
+            this.emit('touchDouble', {e});
+            this.firstTouch = true;
+        }
     }
 
     onTouchEnd (e) {

@@ -4,7 +4,6 @@ class Kanban {
     constructor (project, socket) {
         this.project = project;
         this.socket = socket;
-        socket.join(project.id);
         this.socketInit();
     }
 
@@ -74,6 +73,8 @@ class Kanban {
 
     socketInit () {
         const {socket, project} = this;
+
+        socket.join(project.id);
 
         socket.on('createTask', ({ task }) => project.tasks.push(task));
 
