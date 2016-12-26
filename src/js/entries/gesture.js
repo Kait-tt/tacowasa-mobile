@@ -2,12 +2,11 @@
 require('babel-polyfill');
 require('jquery.transit');
 require('../../scss/kanban.scss');
-
 const _ = require('lodash');
 const MyQRReader = require('../models/myqrreader');
-
 const Project = require('../models/project');
 const Socket = require('../models/socket');
+const Vector = require('../models/vector');
 
 let project, socket;
 const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
@@ -106,7 +105,7 @@ el_hitarea.addEventListener('touchmove', function(event) {
     var center = new Vector(270,470);
     var firstP = new Vector(didx,didy);
     var afterP = new Vector(difx,dify);
-    var dist = Vector.calc_length(firstP,center,afterP) * multiple_scroll;
+    var dist = Vector.calcMoveAngle(firstP,center,afterP) * multiple_scroll;
 
     updateXY(event);
 
@@ -136,45 +135,6 @@ el_hitarea.addEventListener('touchend', function(event) {
     isCatch = false;
     socket.emit('qrPick', {taskId: null});
 }, false);
-
-
-class Vector{
-    constructor(x,y){
-        this.x = x;
-        this.y = y;
-    }
-    static diff(v1,v2){
-        var retX = v1.x - v2.x;
-        var retY = v1.y - v2.y;
-        var ret = new Vector(retX, retY);
-        return ret;
-    }
-    static dot(v1,v2){
-        return v1.x * v2.x + v1.y * v2.y;
-    }
-    static cross(v1,v2){
-        return v1.x * v2.y - v1.y * v2.x;
-    }
-    get norm() {
-        return Math.sqrt(Vector.dot(this, this));
-    }
-    static calc_length(p1, p2, p3){
-        var ca = Vector.diff(p1,p2);
-        var cb = Vector.diff(p3,p2);
-        var s = Vector.cross(ca,cb);//0より大きいと左
-        var na = p1.norm;
-        var nb = p2.norm;
-        // var theta = Math.asin(s / (na * nb));
-        var theta = Math.sign(Math.asin(Vector.cross(ca,cb) / ca.norm / cb.norm )) * Math.sqrt(Vector.diff(p1,p3).norm);
-        return theta;
-
-        // if(s<=0){
-        //     theta = theta * -1;
-        // }
-        // return (180 / 3.14) * theta;
-        //return theta * 5;
-    }
-}
 
 
 
