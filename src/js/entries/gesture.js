@@ -5,6 +5,7 @@ require('../../scss/kanban.scss');
 const _ = require('lodash');
 const Util = require('../modules/util');
 const MyQRReader = require('../models/myqrreader');
+const DeviceMotion = require('../models/device_motion');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
 const Vector = require('../models/vector');
@@ -14,6 +15,7 @@ const {projectId} = Util.parseURLQuery();
 
 let project, socket, kanban;
 const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
+const deviceMotion = new DeviceMotion({threshold: 7, sleepTime: 1000});
 
 const multiple_scroll = 100;
 
@@ -146,51 +148,24 @@ el_hitarea.addEventListener('touchend', function(event) {
 
 
 // DeviceMotion Event
-window.addEventListener("devicemotion", devicemotionHandler, false);
-
-const moveStageDebounced = _.debounce(moveStage, 1000);
-
-// 加速度が変化
-function devicemotionHandler(event) {
-    if (isCatch && !isMotion) {
-        const l = 7;
-        const {x, y} = event.acceleration;
-        console.log(x, y);
-
-        if (x > l) {
-            moveStageDebounced('right');
-        } else if (x < -l) {
-            moveStageDebounced('left');
-        } else if (y > l) {
-            moveStageDebounced('up');
-        } else if (y < -l) {
-            moveStageDebounced('down');
-        } else {
-            return;
-        }
-    }
-}
-
-function moveStage(dir) {
-    if (dir === 'right') { right(); }
-    else if (dir === 'left')  { left(); }
-    else if (dir === 'down')  { down(); }
-    else { return; }
-
-    isMotion = true;
-    setTimeout(() => { isMotion = false; }, 2000);
-}
-
-function right () {
+deviceMotion.on('right', () => {
+    if (isCatch) { return; }
     const selectUsername = document.getElementById('userlist').value;
     kanban.stepStage(didqr, selectUsername, 1);
-}
+});
 
-function left () {
+deviceMotion.on('left', () => {
+    if (isCatch) { return; }
     const selectUsername = document.getElementById('userlist').value;
-    kanban.stepStage(didqr, selectUsername, 1);
-}
+    kanban.stepStage(didqr, selectUsername, -1);
+});
 
-function down () {
+deviceMotion.on('back', () => {
+    if (isCatch) { return; }
+    kanban.stepAssign(didqr, -1);
+});
+
+deviceMotion.on('front', () => {
+    if (isCatch) { return; }
     kanban.stepAssign(didqr, 1);
-}
+});
