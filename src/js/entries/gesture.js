@@ -3,10 +3,190 @@ require('babel-polyfill');
 require('jquery.transit');
 require('../../scss/kanban.scss');
 
+const _ = require('lodash');
+const qrread = require('./qrread');
+
 const Project = require('../models/project');
 const Socket = require('../models/socket');
 
 let project, socket;
+
+const multiple_scroll = 100;
+
+
+// 要素ら
+
+var el_hitarea = document.getElementById('hitarea');
+var el_eventname = document.getElementById('eventname');
+var el_x = document.getElementById('x');
+var el_y = document.getElementById('y');
+
+var isMotion = false;
+var isCatch = false;
+// 表示をアップデートする関数群
+
+var didFirstTap = false;
+
+var updateXY = function(event) {
+    el_x.innerHTML = event.changedTouches[0].pageX;
+    el_y.innerHTML = event.changedTouches[0].pageY;
+};
+var updateEventname = function(eventname) {
+    el_eventname.innerHTML = eventname;
+};
+
+
+
+//emit hover pick
+
+var didqr;
+
+var content = null;
+$(document).ready(function() {
+    $('#sample').on('DOMSubtreeModified propertychange', function() {
+        alert('Change!');
+    });
+    $('#click_me').click(function() {
+        $('#sample').text('Change!');
+    });
+});
+
+let recognituionTimeoutId = null;
+qrread.events.on('recognition', ({ data }) => {
+    if (!isCatch && didqr !== data) {
+        didqr = data;
+        socket.emit('qrHover', { taskId: Number(didqr) });
+
+        if (recognituionTimeoutId) {
+            clearTimeout(recognituionTimeoutId);
+        }
+
+        recognituionTimeoutId = setTimeout(() => {
+            data = null;
+            socket.emit('qrHover', { taskId: null });
+        }, 5000);
+    }
+});
+
+
+el_hitarea.addEventListener('touchstart', function(event) {
+    event.preventDefault();
+
+    if (!didFirstTap) {
+
+        didFirstTap = true;
+
+
+        setTimeout(function() {
+            didFirstTap = false;
+        }, 350);
+    } else {
+        console.log("ダブルタップ");
+        if (didqr) {
+            location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId=" + didqr;
+        } else {
+            console.log("qrコードを認識してください")
+        }
+
+        didFirstTap = false;
+    }
+
+    if (didqr) {
+        updateEventname('Catch');
+        el_hitarea.style.backgroundColor = 'red';
+        isCatch = true;
+        socket.emit('qrPick', {taskId: Number(didqr)});
+    }　else {
+        el_hitarea.style.backgroundColor = 'blue';
+        updateEventname('Qr reading required');
+        isCatch = false;
+        socket.emit('qrPick', {taskId: null});
+    }
+
+}, false);
+
+el_hitarea.addEventListener('touchmove', function(event) {
+    event.preventDefault();
+    var didy= el_y.textContent;
+    var didx =el_x.textContent;
+    var dify = event.changedTouches[0].pageY;
+    var difx = event.changedTouches[0].pageX;
+
+    var center = new Vector(270,470);
+    var firstP = new Vector(didx,didy);
+    var afterP = new Vector(difx,dify);
+    var dist = Vector.calc_length(firstP,center,afterP) * multiple_scroll;
+
+    updateXY(event);
+
+
+    if (didqr) {
+        var qrid = didqr;
+        const task = project.tasks.find(x => String(x.id) === qrid);
+
+        updateEventname('swipe');
+        el_hitarea.style.backgroundColor = 'yellow';
+        isCatch = true;
+
+        socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist});
+    }　else {
+        updateEventname('touchmove');
+        el_hitarea.style.backgroundColor = 'blue';
+        isCatch = false;
+
+        socket.emit('qrScrollUser', {dy: dist});
+    }
+}, false);
+
+el_hitarea.addEventListener('touchend', function(event) {
+    updateEventname('touchend');
+    updateXY(event);
+    el_hitarea.style.backgroundColor = 'blue';
+    isCatch = false;
+    socket.emit('qrPick', {taskId: null});
+}, false);
+
+
+class Vector{
+    constructor(x,y){
+        this.x = x;
+        this.y = y;
+    }
+    static diff(v1,v2){
+        var retX = v1.x - v2.x;
+        var retY = v1.y - v2.y;
+        var ret = new Vector(retX, retY);
+        return ret;
+    }
+    static dot(v1,v2){
+        return v1.x * v2.x + v1.y * v2.y;
+    }
+    static cross(v1,v2){
+        return v1.x * v2.y - v1.y * v2.x;
+    }
+    get norm() {
+        return Math.sqrt(Vector.dot(this, this));
+    }
+    static calc_length(p1, p2, p3){
+        var ca = Vector.diff(p1,p2);
+        var cb = Vector.diff(p3,p2);
+        var s = Vector.cross(ca,cb);//0より大きいと左
+        var na = p1.norm;
+        var nb = p2.norm;
+        // var theta = Math.asin(s / (na * nb));
+        var theta = Math.sign(Math.asin(Vector.cross(ca,cb) / ca.norm / cb.norm )) * Math.sqrt(Vector.diff(p1,p3).norm);
+        return theta;
+
+        // if(s<=0){
+        //     theta = theta * -1;
+        // }
+        // return (180 / 3.14) * theta;
+        //return theta * 5;
+    }
+}
+
+
+
 
 Project.fetch(getProjectId())
     .then(_project => {
@@ -20,7 +200,7 @@ Project.fetch(getProjectId())
 
         var user = [];
 
-        for (var i in project.users){
+        for (var i in project.users) {
             user.push(project.users[i].username);
         }
 
@@ -36,239 +216,209 @@ Project.fetch(getProjectId())
     })
     .catch(err => console.error(err));
 
+// DeviceMotion Event
+window.addEventListener("devicemotion", devicemotionHandler, false);
 
-(function() {
-    var $arrow;
-    var $button;
-    var $window;
-    var stageW;
-    var stageH;
-
-    var isMotion;
-    var isCatch;
+function Edit_task(event) {
+    if (didqr) {
+        location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId=" + didqr;
+    } else {
+        alert("タスクのQRコードを認識してください");
+    }
+}
 
 
-    $(function() {
-        $arrow = $("#arrow");
-        var catch_button = $("#catch");
-        var edit_button = $("#edit");
+const moveStageDebounced = _.debounce(moveStage, 1000);
 
-        $window = $(window);
+// 加速度が変化
+function devicemotionHandler(event) {
+    if (isCatch && !isMotion) {
+        const l = 7;
+        const {x, y} = event.acceleration;
+        console.log(x, y);
 
-        isMotion = false;
-        isCatch = false;
+        if (x > l) {
+            moveStageDebounced('right');
+        } else if (x < -l) {
+            moveStageDebounced('left');
+        } else if (y > l) {
+            moveStageDebounced('up');
+        } else if (y < -l) {
+            moveStageDebounced('down');
+        } else {
+            return;
+        }
+    }
+}
 
-        $(window).on("resize", resizeHandler);
-        resizeHandler();
+function moveStage(dir) {
+    if (dir === 'right') { right(); }
+    else if (dir === 'left')  { left(); }
+    else if (dir === 'down')  { down(); }
+    else { return; }
 
-        catch_button.get(0).addEventListener("click", Catch_release, false);
-        edit_button.get(0).addEventListener("click", Edit_task, false);
+    isMotion = true;
+    setTimeout(() => { isMotion = false; }, 2000);
+}
 
-        // DeviceMotion Event
-        window.addEventListener("devicemotion", devicemotionHandler, false);
+function right() {
+    console.log("right");
+    var qrid = didqr;
+    const task = project.tasks.find(x => String(x.id) === qrid);
+    const currentStage = project.stages.find(x => x.id === task.stageId);
+    const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
+    const currentPos = stageNames.indexOf(currentStage.name);
+    const afterPos = currentPos + 1;
+
+    var username = document.getElementById("userlist").value;
+    const selectUser = project.users.find(x => x.username === username);
+
+    if (afterPos >= stageNames.length) {
+        // 次のステージには行けない
+    }
+    const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
+
+    let afterUserId;
+    if (afterStage.assigned) {
+        if (task.userId == null) {
+            afterUserId = selectUser.id;
+        } else {
+            afterUserId = task.userId;
+        }
+    } else {
+        afterUserId = null;
+    }
+    socket.emit('updateTaskStatusAndOrder', {
+        taskId: qrid,
+        updateParams: {
+            stageId: afterStage.id,
+            userId: afterUserId
+        }
+    });
+}
+
+function left() {
+    console.log("left");
+    var qrid = didqr;
+    const task = project.tasks.find(x => String(x.id) === qrid);
+    const currentStage = project.stages.find(x => x.id === task.stageId);
+    const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
+    const currentPos = stageNames.indexOf(currentStage.name);
+    const afterPos = currentPos - 1;
+    if (afterPos == 0) {
+        // 次のステージには行けない
+    }
+    const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
+
+    let afterUserId;
+    if (afterStage.assigned) {
+        if (currentStage.assigned) {
+            afterUserId = task.userId;
+        } else {
+            // アサインする場合
+        }
+    } else {
+        afterUserId = null;
+    }
+
+    socket.emit('updateTaskStatusAndOrder', {
+        taskId: qrid,
+        updateParams: {
+            stageId: afterStage.id,
+            userId: afterUserId
+        }
     });
 
-    function Catch_release(event) {
-        if ($("#display_data").text() != "")
-            if (isCatch == true) {
-                isCatch = false;
-                alert("タスクのQRコードを認識してください");
-            } else {
-                isCatch = true;
-                console.log("Catch");
-            }
+}
+
+function down(){
+    console.log("down");
+
+    var qrid = didqr;
+    const task = project.tasks.find(x => String(x.id) === qrid);
+    const currentStage = project.stages.find(x => x.id === task.stageId);
+
+    var username = document.getElementById("userlist").value;
+    const user = project.users.find(x => x.username === username);
+    let nextUserId = null;
+    if (!user.nextMemberId) {
+        const nextUser = project.users.find(x => x.member.id === user.member.nextMemberId);
+        nextUserId = nextUser.id;
     }
-
-    function Edit_task(event) {
-        if ($("#display_data").text() != "")
-            {
-                var qrid = $("#display_data").text();
-                var QRCODE = localStorage.getItem('qrcode');
-                location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId="+QRCODE;
-            } else {
-                alert("タスクのQRコードを認識してください");
-            }
-    }
-
-    // 加速度が変化
-    function devicemotionHandler(event) {
-        if (isCatch == true) {
-            if (isMotion) return;
-
-
-
-            // 加速度
-            // X軸
-            var x = event.acceleration.x;
-            // Y軸
-            var y = event.acceleration.y;
-            // Z軸
-            var z = event.acceleration.z;
-
-            $arrow.stop();
-
-            var l = 7;
-            if (x > l) { // 右
-                alert("migi");
-                right();
-            } else if (x < -l) { // 左
-                alert("hidari");
-                left();
-            } else if (y > l) { // 上
-                //alert("ue");
-            } else if (y < -l) { // 下
-                //alert("sita");
-            } else return;
-
-            isMotion = true;
-
-            $arrow.delay(500).transition({ x: 0, y: 0 }, 300, "easeOutCubic", function() {
-                isMotion = false
-            });
+    socket.emit('updateTaskStatusAndOrder', {
+        taskId: qrid,
+        updateParams: {
+            stageId: currentStage.id,
+            userId: nextUserId
         }
+    });
+}
+
+function socketInit() {
+    socket.on('createTask', ({ task }) => project.tasks.push(task));
+
+    socket.on('archiveTask', ({ task }) => {
+        project.tasks.find(x => x.id === task.id).stageId = task.stageId;
+    });
+
+    socket.on('updateTaskStatus', ({ task: _task }) => {
+        const task = project.tasks.find(x => x.id === _task.id);
+        task.stageId = _task.stageId;
+        task.userId = _task.userId;
+    });
+
+    socket.on('updateTaskStatusAndOrder', ({ task: _task }) => {
+        const task = project.tasks.find(x => x.id === _task.id);
+        task.stageId = _task.stageId;
+        task.userId = _task.userId;
+    });
+
+    socket.on('updateTaskContent', ({ task: _task }) => {
+        const task = project.tasks.find(x => x.id === _task.id);
+        task.title = _task.title;
+        task.body = _task.body;
+        task.costId = _task.costId;
+    });
+
+    socket.on('updateTaskWorkingState', ({ task, isWorking }) => {
+        project.tasks.find(x => x.id === task.id).isWorking = isWorking;
+    });
+
+    socket.on('attachLabel', ({ task, label }) => {
+        project.tasks.find(x => x.id === task.id).labels = task.labels;
+    });
+
+    socket.on('detachLabel', ({ task, label }) => {
+        project.tasks.find(x => x.id === task.id).labels = task.labels;
+    });
+
+    socket.on('error', () => {
+        console.error('ソケットが接続できませんでした。');
+    });
+
+    socket.on('reconnect', () => {
+        console.debug('ソケットを再接続しました。');
+    });
+
+    socket.on('disconnect', () => {
+        console.error('ソケットが切断されました。');
+    });
+
+    socket.on('reconnect_error', () => {
+        console.error('ソケットを再接続しています。');
+    });
+
+    socket.on('operationError', res => {
+        console.error('操作エラー', res);
+    });
+}
+
+function getProjectId() {
+    const search = location.search;
+    if (!search) {
+        return null;
     }
-
-    function resizeHandler(event) {
-        stageW = $window.width();
-        stageH = $window.height();
-    }
-})();
-
-
-
-    function right() {
-        var qrid = document.getElementById("display_data").textContent;
-        const task = project.tasks.find(x => String(x.id) === qrid);
-        const currentStage = project.stages.find(x => x.id === task.stageId);
-        const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
-        const currentPos = stageNames.indexOf(currentStage.name);
-        const afterPos = currentPos + 1;
-
-        var username = document.getElementById("userlist").value;
-        const selectUser = project.users.find(x => x.username === username);
-
-        if (afterPos > stageNames.length) {
-            // 次のステージには行けない
-        }
-        const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
-
-        let afterUserId;
-        if (afterStage.assigned) {
-            if (task.userId == null){
-                afterUserId = selectUser.id;
-            }
-            else{
-                afterUserId = task.userId;
-            }
-        } else {
-            afterUserId = null;
-        }
-        socket.emit('updateTaskStatusAndOrder', {
-            taskId: qrid,
-            updateParams: {
-                stageId: afterStage.id,
-                userId: afterUserId
-            }
-        });
-    }
-
-    function left() {
-        var qrid = document.getElementById("display_data").textContent;
-        const task = project.tasks.find(x => String(x.id) === qrid);
-        const currentStage = project.stages.find(x => x.id === task.stageId);
-        const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
-        const currentPos = stageNames.indexOf(currentStage.name);
-        const afterPos = currentPos - 1;
-        if (afterPos == 0) {
-            // 次のステージには行けない
-        }
-        const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
-
-        let afterUserId;
-        if (afterStage.assigned) {
-            if (currentStage.assigned) {
-                afterUserId = task.userId;
-            } else {
-                // アサインする場合
-            }
-        } else {
-            afterUserId = null;
-        }
-
-        socket.emit('updateTaskStatusAndOrder', {
-            taskId: qrid,
-            updateParams: {
-                stageId: afterStage.id,
-                userId: afterUserId
-            }
-        });
-
-    }
-
-    function socketInit() {
-        socket.on('createTask', ({ task }) => project.tasks.push(task));
-
-        socket.on('archiveTask', ({ task }) => {
-            project.tasks.find(x => x.id === task.id).stageId = task.stageId;
-        });
-
-        socket.on('updateTaskStatus', ({ task: _task }) => {
-            const task = project.tasks.find(x => x.id === _task.id);
-            task.stageId = _task.stageId;
-            task.userId = _task.userId;
-        });
-
-        socket.on('updateTaskStatusAndOrder', ({ task: _task }) => {
-            const task = project.tasks.find(x => x.id === _task.id);
-            task.stageId = _task.stageId;
-            task.userId = _task.userId;
-        });
-
-        socket.on('updateTaskContent', ({ task: _task }) => {
-            const task = project.tasks.find(x => x.id === _task.id);
-            task.title = _task.title;
-            task.body = _task.body;
-            task.costId = _task.costId;
-        });
-
-        socket.on('updateTaskWorkingState', ({ task, isWorking }) => {
-            project.tasks.find(x => x.id === task.id).isWorking = isWorking;
-        });
-
-        socket.on('attachLabel', ({ task, label }) => {
-            project.tasks.find(x => x.id === task.id).labels = task.labels;
-        });
-
-        socket.on('detachLabel', ({ task, label }) => {
-            project.tasks.find(x => x.id === task.id).labels = task.labels;
-        });
-
-        socket.on('error', () => {
-            console.error('ソケットが接続できませんでした。');
-        });
-
-        socket.on('reconnect', () => {
-            console.debug('ソケットを再接続しました。');
-        });
-
-        socket.on('disconnect', () => {
-            console.error('ソケットが切断されました。');
-        });
-
-        socket.on('reconnect_error', () => {
-            console.error('ソケットを再接続しています。');
-        });
-
-        socket.on('operationError', res => {
-            console.error('操作エラー', res);
-        });
-    }
-
-    function getProjectId() {
-        const search = location.search;
-        if (!search) {
-            return null; }
-        const qs = search.slice(1).split('&').map(q => q.split('='));
-        const q = qs.find(x => x.length && x[0] === 'projectId');
-        return q && q.length > 1 && q[1] || null;
-    }
+    const qs = search.slice(1).split('&').map(q => q.split('='));
+    const q = qs.find(x => x.length && x[0] === 'projectId');
+    return q && q.length > 1 && q[1] || null;
+}

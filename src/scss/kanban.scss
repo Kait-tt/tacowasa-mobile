@@ -1,6 +1,39 @@
 @charset "UTF-8";
 
-button.button5 {
+#button_layout{
+    padding : 20px;
+}
+
+/*#catch{
+    margin-right : 110px;
+    text-align: left;
+}
+
+#edit{
+    text-align: right;
+}*/
+
+h3{
+    text-align:center;
+}
+
+h1{
+    font-size: 1.2em;
+
+}
+
+#hitarea {
+    margin:10px 10px 8px;
+    background:blue;
+    color:#fff;
+    line-height:600px;
+}
+#eventname {
+    margin: 0 0 8px;
+}
+
+
+input.button5 {
     /* 文字サイズを1.4emに指定 */
     font-size: 1.4em;
 

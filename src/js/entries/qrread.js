@@ -1,50 +1,53 @@
 ﻿'use strict';
 require('babel-polyfill');
 const Module = require('../models/quirc');
+const EventEmitter2 = require('eventemitter2');
 
-let last = Date.now();
-const DEBUG = 0;
-const ECC = {
+const events = new EventEmitter2();
+
+var last = Date.now();
+var DEBUG = 0;
+var ECC = {
     0: 'M',
     1: 'L',
     2: 'H',
     3: 'Q'
 };
 
-const DATA = {
+var DATA = {
     1: 'NUMERIC',
     2: 'ALPHA',
     3: 'BYTE',
     4: 'KANJI'
 };
 
-let QRCODE;
+var QRCODE;
 
 function log() {
     if (!DEBUG) return;
-    const now = Date.now();
-    const args = Array.prototype.slice.call(arguments);
+    var now = Date.now();
+    var args = Array.prototype.slice.call(arguments);
     args.unshift('+' + (now - last) + 'ms');
     console.log.apply(console, args);
     last = now;
 }
 
-let data, image;
-let ctx, width, height;
+var data, image;
+var ctx, width, height;
 
 function gofill() {
     /* Fill out the image buffer here.
      * image is a pointer to a w*h bytes.
      * One byte per pixel, w pixels per line, h lines in the buffer.
      */
-    log('gofill');
-    for (let i = 0, j = 0; i < data.length; i += 4, j++) {
+    log('gofill')
+    for (var i = 0, j = 0; i < data.length; i += 4, j++) {
         Module.HEAPU8[image + j] = 0.2989 * data[i + 0] + 0.5870 * data[i + 1] + 0.1140 * data[i + 2];
     }
 
     log('writing');
 
-    const a = Module._xprocess();
+    var a = Module._xprocess();
     log('quirc_end', a);
 }
 
@@ -54,17 +57,17 @@ function counted(n) {
 
 Module.events.on('decode', function ({params: [i, version, ecc_level, mask, data_type, payload, payload_len,
 	x0, y0, x1, y1, x2, y2, x3, y3]}) {
-    const buffer = read(payload, payload_len);
-    let str = String.fromCharCode.apply(null, buffer);
+    var buffer = read(payload, payload_len);
+    var str = String.fromCharCode.apply(null, buffer);
     log("Data:", str);
     QRCODE =str;
-    localStorage.setItem('qrcode',str);
     if (str) {
         if (str.startsWith('http')) {
             str = '<a href="' + str + '">' + str + '</a>';
         }
         // if (i == 0)
         display_data.innerHTML = str;
+        events.emit('recognition', {data: str})
         // else display_data.innerHTML += '<br/>' + str;
     }
 
@@ -94,38 +97,27 @@ function read(offset, len) {
 }
 
 // start
-const video = document.createElement('video');
+var video = document.createElement('video');
 video.autoplay = true;
 
-if (!navigator.mediaDevices && (navigator.mozGetUserMedia || navigator.webkitGetUserMedia)) {
-    navigator.mediaDevices = {
-        getUserMedia: (c) => {
-            return new Promise((y, n) => (navigator.mozGetUserMedia || navigator.webkitGetUserMedia).call(navigator, c, y, n));
-        }
-    };
-}
+navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
 
-const hdConstraints = {
+var tw = 640 // 320 // 640 // 1280;
+var th = 480 // 240 // 480 // 720
+
+var hdConstraints = {
     audio: false,
     video: {
+        optional: [{ sourceId: "8fd5cd7889ba15ce0603b79bc187ce8f283b89dc7c992b053a0edf17589c2f45" }],
         mandatory: {
-            maxWidth: 640,
-            maxHeight: 480
+            maxWidth: tw,
+            maxHeight: th
         }
     }
 };
 
-if (navigator.mediaDevices && MediaStreamTrack) {
-    MediaStreamTrack.getSources(data => {
-        const cameras = data.filter(x => x.kind === 'video');
-        if (!cameras.length) { return errorCallback(''); }
-        const backCamera = cameras.find(x => x.facing === 'environment');
-
-        hdConstraints.video.optional = [{sourceId: backCamera ? backCamera.id : cameras[0].id}];
-        navigator.mediaDevices.getUserMedia(hdConstraints)
-            .then(success)
-            .catch(errorCallback);
-    });
+if (navigator.getUserMedia) {
+    navigator.getUserMedia(hdConstraints, success, errorCallback);
 } else {
     errorCallback('');
 }
@@ -141,33 +133,36 @@ function success(stream) {
     video.play();
 
     function getFrame() {
-        requestAnimationFrame(getFrame);
+        if (video.videoWidth) {
+            if (!image) {
+                width = video.videoWidth, height = video.videoHeight;
+                log('video', width, height, video);
 
-        if (!video.videoWidth) return;
+                var canvas = document.createElement('canvas');
+                canvas.width = width;
+                canvas.height = height;
 
-        if (!image) {
-            width = video.videoWidth;
-            height = video.videoHeight;
-            log('video', width, height, video);
+                ctx = canvas.getContext('2d');
+                document.body.appendChild(canvas);
 
-            const canvas = document.createElement('canvas');
-            canvas.width = width;
-            canvas.height = height;
-
-            ctx = canvas.getContext('2d');
-            document.body.appendChild(canvas);
-
-            log('start');
-            image = Module._xsetup(width, height);
-            log('_xsetup', image, 'pointer');
-            return;
+                log('start');
+                image = Module._xsetup(width, height);
+                log('_xsetup', image, 'pointer');
+            } else {
+                log('interval')
+                ctx.drawImage(video, 10, 10, width, height);
+                var imageData = ctx.getImageData(0, 0, width, height);
+                data = imageData.data;
+                gofill();
+            }
         }
-        log('interval');
-        ctx.drawImage(video, 0, 0, width, height);
-        const imageData = ctx.getImageData(0, 0, width, height);
-        data = imageData.data;
-        gofill();
+
+        requestAnimationFrame(getFrame);
     }
 
     getFrame();
 }
+
+module.exports = {
+    events
+};
