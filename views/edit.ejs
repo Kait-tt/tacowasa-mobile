@@ -6,26 +6,20 @@
 <body>
 
 <h1>task edit</h1>
-<p id = "TTT">タイトル
-  <input size="20" id="taskname" type="text" value="">
-</p>
+<p>タイトル</p>
+<input size="20" id="title" type="text" value="">
 
-<p>説明　　
-  <input size="20" id="description" type="text">
-</p>
 
-<p>Cost　　
-  <select id="cost">
-    <option value="undecided" selected>undecided</option>
-    <option value="low">low</option>
-    <option value="medium">medium</option>
-    <option value="high">high</option>
-  </select>
-</p>
+<p>説明</p>
+<input size="20" id="description" type="text">
 
-<!--<p>ラベル</p><p id =labellist></p>-->
+<p>Cost</p>
+<select id="cost"></select>
 
-<p><button id="edit-task">Create Task</button></p>
+<p>ラベル</p>
+<p id="labellist"></p>
+
+<p><button id="update-task">Update Task</button></p>
 
 <script src="common.js"></script>
 <script src ="edit.js"></script>

@@ -7,10 +7,18 @@ const Project = require('../models/project');
 const Socket = require('../models/socket');
 const Kanban = require('../viewmodels/kanban');
 
-const {projectId, taskId} = Util.parseURLQuery();
+const qs = Util.parseURLQuery();
+const projectId = qs.projectId;
+const taskId = Number(qs.taskId);
 
+let project, socket, kanban, task;
 
-let project, socket, kanban;
+const $title = $('#title');
+const $description = $('#description');
+const $cost = $('#cost');
+const $labelList = $('#labellist');
+
+const $updateTask = $('#update-task');
 
 Project.fetch(projectId)
     .then(_project => {
@@ -18,61 +26,63 @@ Project.fetch(projectId)
         socket = new Socket();
         kanban = new Kanban(project, socket);
 
+        task = project.tasks.find(x => x.id === taskId);
 
-        // var label = [];
+        $title.val(task.title);
+        $description.val(task.body);
 
-        // for (var i in project.labels){
-        //     label.push(project.labels[i].name);
-        // }
+        project.costs.forEach(({id, name}) => {
+            const $option = $(`<option value="${name}">${name}</option>`);
+            if (id === task.costId) { $option.prop('selected', true); }
+            $cost.append($option);
+        });
 
-        //  $(function() {
-        //     for (var count = 0; count < label.length; count++) {
-        //         var plist = $('<input type="checkbox" name="listname" />').html(label[count]).val(label[count]);
-        //         var qlist = $('<label>').html(label[count]);
-        //         $("#labellist").append(plist).append(qlist);
-        //     }
-        // });
-        attachSamples();
+        const labelIds = task.labels.map(x => x.id);
+        project.labels.forEach(({id, name}) => {
+            const $input = $('<input type="checkbox" class="label-item" />').val(name);
+            const $label = $('<label>').text(name);
+            if (labelIds.includes(id)) { $input.prop('checked', true); }
+            $labelList.append($input).append($label);
+        });
+
+        $updateTask.on('click', onClickUpdateButton);
     })
     .catch(err => console.error(err));
 
 
+function onClickUpdateButton () {
+    const title = $title.val();
+    const description = $description.val();
+    const costName = $cost.val();
 
-function attachSamples () {
-    document.getElementById('edit-task').addEventListener('click', () => {
+    const cost = project.costs.find(x => x.name === costName);
+    const labelIds = _.map($('.label-item:checked'), ele => {
+        const labelName = $(ele).val();
+        return project.labels.find(x => x.name === labelName).id;
+    });
 
-    var taskname = document.getElementById("taskname").value;
-    var description = document.getElementById("description").value;
-    var cost = document.getElementById("cost").value;
+    socket.emit('updateTaskContent', {
+        taskId,
+        updateParams: {
+            title: title,
+            body: description,
+            costId: cost.id
+        }
+    });
 
-    // var labellist2 = [];
-    // $('[name="listname"]:checked').each(function(){
-    //     labellist2.push(project.labels.find(x => x.name === $(this).val()));
-    //     // labellist2.push($(this).val());
-    // });
-
-    const cost2 = project.costs.find(x => x.name === cost);
-    // const label2 = labellist2.map(x => x.id);
-
-    // var gettask = project.tasks.find(x => x.id === gettaskId().value);
-
-    // const attachLabels = _.difference(label2, gettask.labels());
-
-        socket.emit('updateTaskContent', {
-            taskId,
-            updateParams: {
-                title: taskname,
-                body: description,
-                costId: cost2.id
-            }
+    const beforeLabelIds = task.labels.map(x => x.id);
+    const attachLabelIds = _.difference(labelIds, beforeLabelIds);
+    const detachLabelIds = _.difference(beforeLabelIds, labelIds);
+    attachLabelIds.forEach(labelId => {
+        socket.emit('attachLabel', {
+            taskId: taskId,
+            labelId: labelId
         });
-
-    // attachLabels.forEach(label => {
-    //             this.socket.emit('attachLabel', {
-    //                 taskId: gettaskId(),
-    //                 labelId: label.id()
-    //             });
-    //         });
-}, false);
-
+    });
+    detachLabelIds.forEach(labelId => {
+        socket.emit('detachLabel', {
+            taskId: taskId,
+            labelId: labelId
+        });
+    });
 }

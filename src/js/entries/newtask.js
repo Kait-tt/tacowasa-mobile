@@ -11,11 +11,11 @@ const {projectId} = Util.parseURLQuery();
 
 let project, socket, kanban;
 
-const $labelList = $('#labellist');
 const $title = $('#title');
 const $description = $('#description');
 const $stage = $('#stage');
 const $cost = $('#cost');
+const $labelList = $('#labellist');
 
 const $createTask = $('#createTask');
 
@@ -26,7 +26,7 @@ Project.fetch(projectId)
         kanban = new Kanban(project, socket);
 
         project.labels.forEach(({name}) => {
-            const $input = $('<input type="checkbox" name="listname" />').val(name);
+            const $input = $('<input type="checkbox" class="label-item" />').val(name);
             const $label = $('<label>').text(name);
             $labelList.append($input).append($label);
         });
@@ -56,9 +56,9 @@ function onClickCreateButton () {
 
     const stage = project.stages.find(x => x.name === stageName);
     const cost = project.costs.find(x => x.name === costName);
-    const labels = _.map($('[name="listname"]:checked'), $ele => {
-        const labelName = $ele.val();
-        return project.labels.find(x => x.name === labelName)
+    const labels = _.map($('.label-item:checked'), ele => {
+        const labelName = $(ele).val();
+        return project.labels.find(x => x.name === labelName);
     });
 
     socket.emit('createTask', {
