@@ -21,10 +21,12 @@ let qrNum;
 const $hitArea = document.getElementById('hitarea');
 const $eventName = document.getElementById('eventname');
 const $userList = document.getElementById('userlist');
+const $taskNum = document.getElementById('task-num');
 
 const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
 const deviceMotion = new DeviceMotion({threshold: 7, sleepTime: 1000});
 const touchContent = new TouchContent($hitArea);
+socket = new Socket();
 
 function updateEventname (eventname) {
     $eventName.innerHTML = eventname;
@@ -33,7 +35,6 @@ function updateEventname (eventname) {
 Project.fetch(projectId)
     .then(_project => {
         project = _project;
-        socket = new Socket();
         kanban = new Kanban(project, socket);
 
         project.users.forEach(user => {
@@ -44,6 +45,7 @@ Project.fetch(projectId)
         });
 
         myQRReader.start();
+        document.body.appendChild(myQRReader.canvas);
     })
     .catch(err => console.error(err));
 
@@ -51,6 +53,7 @@ Project.fetch(projectId)
 myQRReader.on('recognized', ({qrs, qr, lastNum}) => {
     if (!isCatch && qrNum !== lastNum) {
         qrNum = lastNum;
+        $taskNum.innerText = lastNum;
         socket.emit('qrHover', { taskId: qrNum === null ? null : Number(qrNum) });
     }
 });
@@ -94,6 +97,7 @@ touchContent.on('moveCircle', ({dist}) => {
         $hitArea.style.backgroundColor = 'yellow';
 
         const task = project.tasks.find(x => String(x.id) === String(qrNum));
+        if (!task) { return; }
         socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist * scrollK});
     }　else {
         updateEventname('touchmove');
@@ -105,23 +109,23 @@ touchContent.on('moveCircle', ({dist}) => {
 
 // DeviceMotion Event
 deviceMotion.on('right', () => {
-    if (isCatch) { return; }
+    if (!isCatch) { return; }
     const selectUsername = $userList.value;
     kanban.stepStage(qrNum, selectUsername, 1);
 });
 
 deviceMotion.on('left', () => {
-    if (isCatch) { return; }
+    if (!isCatch) { return; }
     const selectUsername = $userList.value;
     kanban.stepStage(qrNum, selectUsername, -1);
 });
 
 deviceMotion.on('back', () => {
-    if (isCatch) { return; }
+    if (!isCatch) { return; }
     kanban.stepAssign(qrNum, -1);
 });
 
 deviceMotion.on('front', () => {
-    if (isCatch) { return; }
+    if (!isCatch) { return; }
     kanban.stepAssign(qrNum, 1);
 });

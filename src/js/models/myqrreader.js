@@ -67,8 +67,10 @@ class MyQRReader extends EventEmitter2 {
     onGetUserMedia (stream) {
         this.video.src = window.URL.createObjectURL(stream);
         this.video.onclick = () => this.video.play();
-        this.video.play();
-        this.onFrame();
+        setTimeout(() => {
+            this.video.play();
+            this.onFrame();
+        }, 500);
     }
 
     onFrame () {

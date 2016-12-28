@@ -25,17 +25,17 @@ class DeviceMotion extends EventEmitter2 {
 
         const l = this.threshold;
         if (x > l) {
-            event.emit('right', {});
+            this.emit('right', {});
         } else if (x < -l) {
-            event.emit('left', {});
+            this.emit('left', {});
         } else if (y > l) {
-            event.emit('up', {});
+            this.emit('up', {});
         } else if (y < -l) {
-            event.emit('down', {});
+            this.emit('down', {});
         } else if (z > l) {
-            event.emit('front', {});
+            this.emit('front', {});
         } else if (z < -l) {
-            event.emit('back', {});
+            this.emit('back', {});
         } else {
             return;
         }
