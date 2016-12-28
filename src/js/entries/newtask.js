@@ -17,7 +17,7 @@ const $stage = $('#stage');
 const $cost = $('#cost');
 const $labelList = $('#labellist');
 
-const $createTask = $('#createTask');
+const $createTask = $('#create-task');
 
 Project.fetch(projectId)
     .then(_project => {
