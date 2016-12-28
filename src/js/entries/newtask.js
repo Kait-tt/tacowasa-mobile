@@ -9,70 +9,63 @@ const Kanban = require('../viewmodels/kanban');
 
 const {projectId} = Util.parseURLQuery();
 
-
 let project, socket, kanban;
 
-        console.log(1);
+const $labelList = $('#labellist');
+const $title = $('#title');
+const $description = $('#description');
+const $stage = $('#stage');
+const $cost = $('#cost');
+
+const $createTask = $('#createTask');
+
 Project.fetch(projectId)
     .then(_project => {
         project = _project;
         socket = new Socket();
         kanban = new Kanban(project, socket);
 
+        project.labels.forEach(({name}) => {
+            const $input = $('<input type="checkbox" name="listname" />').val(name);
+            const $label = $('<label>').text(name);
+            $labelList.append($input).append($label);
+        });
 
-        var label = [];
+        project.stages.forEach(({name}, i) => {
+            const $option = $(`<option value="${name}">${name}</option>`);
+            if (!i) { $option.prop('selected', true); }
+            $stage.append($option);
+        });
 
-        for (var i in project.labels){
-            label.push(project.labels[i].name);
-        }
-        for (var count = 0; count < label.length; count++) {
-            var plist = $('<input type="checkbox" name="listname" />').html(label[count]).val(label[count]);
-            var qlist = $('<label>').html(label[count]);
-            $("#labellist").append(plist).append(qlist);
-        }
+        project.costs.forEach(({name}, i) => {
+            const $option = $(`<option value="${name}">${name}</option>`);
+            if (!i) { $option.prop('selected', true); }
+            $cost.append($option);
+        });
 
-        attachSamples();
+        $createTask.on('click', onClickCreateButton);
     })
     .catch(err => console.error(err));
 
 
-function attachSamples () {
+function onClickCreateButton () {
+    const title = $title.val();
+    const description = $description.val();
+    const stageName = $stage.val();
+    const costName = $cost.val();
 
-    document.getElementById('create-task').addEventListener('click', () => {
-
-    var taskname = document.getElementById("taskname").value;
-    var description = document.getElementById("description").value;
-    var stage = document.getElementById("stage").value;
-    var cost = document.getElementById("cost").value;
-
-
-
-    const stage2 = project.stages.find(x => x.name === stage);
-    const cost2 = project.costs.find(x => x.name === cost);
-
-
-
-
-    var labellist2 = [];
-    $('[name="listname"]:checked').each(function(){
-        labellist2.push(project.labels.find(x => x.name === $(this).val()));
-        // labellist2.push($(this).val());
+    const stage = project.stages.find(x => x.name === stageName);
+    const cost = project.costs.find(x => x.name === costName);
+    const labels = _.map($('[name="listname"]:checked'), $ele => {
+        const labelName = $ele.val();
+        return project.labels.find(x => x.name === labelName)
     });
 
-    console.log(labellist2);
-    // labellist2.push(project.labels.find(x => x.name === labelname));
-
-    const label2 = labellist2.map(x => x.id);
-
-
     socket.emit('createTask', {
-                title: taskname,
-                body: description,
-                stageId: stage2.id,
-                costId: cost2.id,
-                labelIds: label2
-        });
-
-}, false);
-
+        title: title,
+        body: description,
+        stageId: stage.id,
+        costId: cost.id,
+        labelIds: labels.map(x => x.id)
+    });
 }
