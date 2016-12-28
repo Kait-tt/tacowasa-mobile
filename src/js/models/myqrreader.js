@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 const _ = require('lodash');
 const EventEmitter2 = require('eventemitter2');
@@ -7,7 +7,9 @@ const EventEmitter2 = require('eventemitter2');
 if (!navigator.mediaDevices && (navigator.mozGetUserMedia || navigator.webkitGetUserMedia)) {
     navigator.mediaDevices = {
         getUserMedia: (c) => {
-            return new Promise((y, n) => (navigator.mozGetUserMedia || navigator.webkitGetUserMedia).call(navigator, c, y, n));
+            return new Promise((resolve, reject) => {
+                (navigator.mozGetUserMedia || navigator.webkitGetUserMedia).call(navigator, c, resolve, reject);
+            });
         }
     };
 }
@@ -139,13 +141,17 @@ function compressAndDecompress (src, dist, width, height) {
 
     for (let y = 0; y < h; y++) {
         for (let x = 0; x < w; x++) {
-            let b = 0, w = 0;
+            let b = 0;
+            let w = 0;
 
             for (let yi = 0; yi < n && y * n + yi < height; yi++) {
                 for (let xi = 0; xi < n && x * n + xi < width; xi++) {
                     const pos = (y * n + yi) * width + x * n + xi;
-                    if (src[pos] === 255) { ++w; }
-                    else { ++b; }
+                    if (src[pos] === 255) {
+                        ++w;
+                    } else {
+                        ++b;
+                    }
                 }
             }
 
@@ -158,7 +164,6 @@ function compressAndDecompress (src, dist, width, height) {
             }
         }
     }
-
 }
 
 function findQRCode (src, width, height) {
@@ -265,14 +270,18 @@ function findQRCode (src, width, height) {
             for (let yi = 0; yi < 4; yi++) {
                 for (let xi = 0; xi < 4; xi++) {
                     if (yi < 2 && xi < 2) { continue; }
-                    let cntb = 0, cntw = 0;
+                    let cntb = 0;
+                    let cntw = 0;
                     for (let yi2 = -sh; yi2 <= sh; yi2++) {
                         for (let xi2 = -sw; xi2 <= sw; xi2++) {
                             const y = Math.floor(y1 + dh + dh * yi * 2 + yi2);
                             const x = Math.floor(x1 + dw + dw * xi * 2 + yi2);
                             if (y < 0 || x < 0 || y >= height || x >= width) { continue; }
-                            if (src[y * width + x] === 0) { ++cntb; }
-                            else { ++cntw; }
+                            if (src[y * width + x]) {
+                                ++cntw;
+                            } else {
+                                ++cntb;
+                            }
                         }
                     }
                     nums.push(cntb >= cntw ? 1 : 0);

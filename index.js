@@ -12,10 +12,6 @@ class Router {
             res.render(path.join(__dirname, 'views', 'index'));
         });
 
-        router.get('/kanban', (req, res) => {
-            res.render(path.join(__dirname, 'views', 'kanban'));
-        });
-
         router.get('/newtask', (req, res) => {
             res.render(path.join(__dirname, 'views', 'newtask'));
         });

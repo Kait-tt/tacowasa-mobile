@@ -11,7 +11,7 @@ class DeviceMotion extends EventEmitter2 {
     }
 
     initEvents () {
-        window.addEventListener("devicemotion", e => {
+        window.addEventListener('devicemotion', e => {
             this.onDeviceMotion(e);
         }, false);
     }

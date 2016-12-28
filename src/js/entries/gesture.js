@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 require('jquery.transit');
 require('../../scss/kanban.scss');
@@ -66,7 +66,7 @@ touchContent.on('touchStart', ({e}) => {
 
         isCatch = true;
         socket.emit('qrPick', {taskId: Number(qrNum)});
-    }　else {
+    } else {
         $hitArea.style.backgroundColor = 'blue';
         updateEventname('Qr reading required');
 
@@ -99,7 +99,7 @@ touchContent.on('moveCircle', ({dist}) => {
         const task = project.tasks.find(x => String(x.id) === String(qrNum));
         if (!task) { return; }
         socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist * scrollK});
-    }　else {
+    } else {
         updateEventname('touchmove');
         $hitArea.style.backgroundColor = 'blue';
 

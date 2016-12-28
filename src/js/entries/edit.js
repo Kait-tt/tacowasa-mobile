@@ -11,7 +11,7 @@ const qs = Util.parseURLQuery();
 const projectId = qs.projectId;
 const taskId = Number(qs.taskId);
 
-let project, socket, kanban, task;
+let project, socket, task;
 
 const $title = $('#title');
 const $description = $('#description');
@@ -24,7 +24,7 @@ Project.fetch(projectId)
     .then(_project => {
         project = _project;
         socket = new Socket();
-        kanban = new Kanban(project, socket);
+        new Kanban(project, socket);
 
         task = project.tasks.find(x => x.id === taskId);
 

@@ -10,7 +10,7 @@ class Vector {
         return new Vector(v1.x - v2.x, v1.y - v2.y);
     }
 
-    static dot (v1, v2){
+    static dot (v1, v2) {
         return v1.x * v2.x + v1.y * v2.y;
     }
 
@@ -18,7 +18,7 @@ class Vector {
         return v1.x * v2.y - v1.y * v2.x;
     }
 
-    get norm() {
+    get norm () {
         return Math.sqrt(Vector.dot(this, this));
     }
 

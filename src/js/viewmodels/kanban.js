@@ -17,7 +17,7 @@ class Kanban {
 
         const selectUser = users.find(x => x.username === selectUsername);
 
-        if ( afterPos < 0 || afterPos >= stages.length) {
+        if (afterPos < 0 || afterPos >= stages.length) {
             // 次のステージには行けない
             return;
         }
@@ -62,7 +62,7 @@ class Kanban {
 
         if (!user) { return; }
 
-        socket.emit('updateTaskStatus', {
+        this.socket.emit('updateTaskStatus', {
             taskId: taskId,
             updateParams: {
                 stageId: currentStage.id,

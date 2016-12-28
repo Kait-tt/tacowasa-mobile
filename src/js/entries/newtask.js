@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 require('../../scss/kanban.scss');
 const _ = require('lodash');
@@ -9,7 +9,7 @@ const Kanban = require('../viewmodels/kanban');
 
 const {projectId} = Util.parseURLQuery();
 
-let project, socket, kanban;
+let project, socket;
 
 const $title = $('#title');
 const $description = $('#description');
@@ -23,7 +23,7 @@ Project.fetch(projectId)
     .then(_project => {
         project = _project;
         socket = new Socket();
-        kanban = new Kanban(project, socket);
+        new Kanban(project, socket);
 
         project.labels.forEach(({name}) => {
             const $input = $('<input type="checkbox" class="label-item" />').val(name);

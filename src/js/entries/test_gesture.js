@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 const DeviceMotion = require('../models/device_motion');
 const deviceMotion = new DeviceMotion({threshold: 7, sleepTime: 1000});
@@ -21,7 +21,7 @@ function updateMinMaxValue (vs) {
 
 ['right', 'left', 'up', 'down', 'front', 'back'].forEach(dir => {
     deviceMotion.on(dir, () => {
-        $result.innerText = `${dir} , ${new Date()}`
+        $result.innerText = `${dir} , ${new Date()}`;
     });
 });
 
