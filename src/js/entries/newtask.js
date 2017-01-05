@@ -1,4 +1,4 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 require('bootstrap');
 require('bootstrap-select');
