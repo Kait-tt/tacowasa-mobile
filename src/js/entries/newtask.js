@@ -1,6 +1,8 @@
-'use strict';
+﻿'use strict';
 require('babel-polyfill');
-require('../../scss/kanban.scss');
+require('../../scss/newtask.scss');
+require('bootstrap');
+require('bootstrap-select');
 const _ = require('lodash');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
@@ -26,9 +28,8 @@ Project.fetch(projectId)
         new Kanban(project, socket);
 
         project.labels.forEach(({name}) => {
-            const $input = $('<input type="checkbox" class="label-item" />').val(name);
-            const $label = $('<label>').text(name);
-            $labelList.append($input).append($label);
+            const $option = $(`<option value="${name}">${name}</option>`);
+            $labelList.append($option);
         });
 
         project.stages.forEach(({name}, i) => {
@@ -44,6 +45,8 @@ Project.fetch(projectId)
         });
 
         $createTask.on('click', onClickCreateButton);
+
+        $('select').selectpicker('refresh');
     })
     .catch(err => console.error(err));
 
@@ -56,7 +59,7 @@ function onClickCreateButton () {
 
     const stage = project.stages.find(x => x.name === stageName);
     const cost = project.costs.find(x => x.name === costName);
-    const labels = _.map($('.label-item:checked'), ele => {
+    const labels = _.map($labelList.find('option:checked'), ele => {
         const labelName = $(ele).val();
         return project.labels.find(x => x.name === labelName);
     });
