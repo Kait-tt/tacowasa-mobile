@@ -1,6 +1,7 @@
 'use strict';
 require('babel-polyfill');
-require('../../scss/kanban.scss');
+require('../../scss/edit.scss');
+require('bootstrap');
 const _ = require('lodash');
 const Util = require('../modules/util');
 const Project = require('../models/project');

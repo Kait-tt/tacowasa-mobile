@@ -1,18 +1,5 @@
 @charset "UTF-8";
 
-#button_layout{
-    padding : 20px;
-}
-
-/*#catch{
-    margin-right : 110px;
-    text-align: left;
-}
-
-#edit{
-    text-align: right;
-}*/
-
 h3{
     text-align:center;
 }
@@ -30,44 +17,4 @@ h1{
 }
 #eventname {
     margin: 0 0 8px;
-}
-
-
-input.button5 {
-    /* 文字サイズを1.4emに指定 */
-    font-size: 1.4em;
-
-    /* 文字の太さをboldに指定 */
-    font-weight: bold;
-
-    /* 縦方向に10px、
-     * 横方向に30pxの余白を指定 */
-    padding: 10px 30px;
-
-    /* 背景色を濃い青色に指定 */
-    background-color: #248;
-
-    /* 文字色を白色に指定 */
-    color: #fff;
-
-    /* ボーダーをなくす */
-    border-style: none;
-
-    /* ボタンの影の指定
-     * 影の横幅を2px
-     * 縦長を2px
-     * ぼかしを3px
-     * 広がりを1px
-     * 色を#666（グレー）に指定 */
-    box-shadow: 2px 2px 3px 1px #666;
-    -moz-box-shadow: 2px 2px 3px 1px #666;
-    -webkit-box-shadow: 2px 2px 3px 1px #666;
-}
-
-button.button5:hover {
-    /* 背景色を明るい青色に指定 */
-    background-color: #24d;
-
-    /* 文字色を白色に指定 */
-    color: #fff;
 }
