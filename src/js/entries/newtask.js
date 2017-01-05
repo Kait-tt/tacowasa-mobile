@@ -1,8 +1,8 @@
 ﻿'use strict';
 require('babel-polyfill');
-require('../../scss/newtask.scss');
 require('bootstrap');
 require('bootstrap-select');
+require('../../scss/newtask.scss');
 const _ = require('lodash');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
