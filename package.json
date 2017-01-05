@@ -36,6 +36,7 @@
     "bluebird": "^3.4.1",
     "bootstrap": "^3.3.7",
     "bootstrap-sass": "^3.3.7",
+    "bootstrap-select": "^1.12.1",
     "co": "^4.6.0",
     "css-loader": "^0.24.0",
     "eventemitter2": "^2.1.0",

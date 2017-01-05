@@ -2,6 +2,7 @@
 require('babel-polyfill');
 require('../../scss/edit.scss');
 require('bootstrap');
+require('bootstrap-select');
 const _ = require('lodash');
 const Util = require('../modules/util');
 const Project = require('../models/project');
@@ -40,13 +41,14 @@ Project.fetch(projectId)
 
         const labelIds = task.labels.map(x => x.id);
         project.labels.forEach(({id, name}) => {
-            const $input = $('<input type="checkbox" class="label-item" />').val(name);
-            const $label = $('<label>').text(name);
-            if (labelIds.includes(id)) { $input.prop('checked', true); }
-            $labelList.append($input).append($label);
+            const $option = $(`<option value="${name}">${name}</option>`);
+            if (labelIds.includes(id)) { $option.prop('selected', true); }
+            $labelList.append($option);
         });
 
         $updateTask.on('click', onClickUpdateButton);
+
+        $('select').selectpicker('refresh');
     })
     .catch(err => console.error(err));
 
@@ -57,7 +59,7 @@ function onClickUpdateButton () {
     const costName = $cost.val();
 
     const cost = project.costs.find(x => x.name === costName);
-    const labelIds = _.map($('.label-item:checked'), ele => {
+    const labelIds = _.map($labelList.find('option:checked'), ele => {
         const labelName = $(ele).val();
         return project.labels.find(x => x.name === labelName).id;
     });
