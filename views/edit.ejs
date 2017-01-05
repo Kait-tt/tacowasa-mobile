@@ -1,25 +1,41 @@
-<html>
+<!doctype html>
+<html lang="ja">
 <head>
-  <meta name="viewport" content="width=device-width, initial-scale=0.75" charset="utf-8">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=0.75">
+  <meta http-equiv="X-UA-Compatible" content="ie=edge">
   <title>Edit</title>
+  <link rel="stylesheet" href="edit.css">
 </head>
 <body>
 
-<h1>task edit</h1>
-<p>タイトル</p>
-<input size="20" id="title" type="text" value="">
+<div class="container-fluid">
+  <h1>Task Edit</h1>
 
+  <form class="form">
+    <div class="form-group">
+      <label for="title" class="control-label">タイトル</label>
+      <input type="text" class="form-control" id="title" placeholder="Title" required>
+    </div>
 
-<p>説明</p>
-<input size="20" id="description" type="text">
+    <div class="form-group">
+      <label for="description" class="control-label">説明</label>
+      <input type="text" class="form-control" id="description" placeholder="Description" required>
+    </div>
 
-<p>Cost</p>
-<select id="cost"></select>
+    <div class="form-group">
+      <label for="cost" class="control-label">コスト</label>
+      <select id="cost" class="selectpicker"></select>
+    </div>
 
-<p>ラベル</p>
-<p id="labellist"></p>
+    <div class="form-group">
+      <label for="labellist" class="control-label">ラベル</label>
+      <select multiple id="labellist" class="selectpicker"></select>
+    </div>
 
-<p><button id="update-task">Update Task</button></p>
+    <button type="button" id="update-task" class="btn btn-success">Update Task</button>
+  </form>
+</div>
 
 <script src="common.js"></script>
 <script src ="edit.js"></script>

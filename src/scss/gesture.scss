@@ -1,0 +1,25 @@
+@charset "UTF-8";
+@import "common";
+
+h1 {
+  font-size: 1.2em;
+}
+
+h3 {
+  text-align:center;
+}
+
+#task-num {
+  font-size: 40px
+}
+
+#hitarea {
+  margin: 10px 10px 8px;
+  background: blue;
+  color: #fff;
+  line-height: 600px;
+}
+
+#eventname {
+  margin: 0 0 8px;
+}

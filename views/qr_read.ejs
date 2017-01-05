@@ -1,20 +1,23 @@
-﻿<html>
+﻿<!doctype html>
+<html lang="ja">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=0.75">
   <meta http-equiv="content-language" content="ja">
+  <title>QR Reader</title>
   <link rel="stylesheet" href="gesture.css">
 </head>
 <body>
 
-<title>QR Reader</title>
-<h1>Please read the QR of any task card</h1>
-<h3>Found<p>[<span style="font-size: 40px" id="task-num"></span>]</p></h3>
+<div class="container-fluid">
+  <h1>Please read the QR of any task card</h1>
+  <h3>Found<p>[<span id="task-num"></span>]</p></h3>
 
-<p>Assign User　<select id="userlist"></select></p>
+  <p>Assign User　<select id="userlist" class="selectpicker"></select></p>
 
-<div id="hitarea">TOUCH ME</div>
-<div id="eventname">-</div>
+  <div id="hitarea">TOUCH ME</div>
+  <div id="eventname">-</div>
+</div>
 
 <script src="common.js"></script>
 <script src="gesture.js"></script>

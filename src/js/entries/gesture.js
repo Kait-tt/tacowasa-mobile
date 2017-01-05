@@ -1,7 +1,9 @@
 'use strict';
 require('babel-polyfill');
 require('jquery.transit');
-require('../../scss/kanban.scss');
+require('bootstrap');
+require('bootstrap-select');
+require('../../scss/gesture.scss');
 const Util = require('../modules/util');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
@@ -46,6 +48,8 @@ Project.fetch(projectId)
 
         myQRReader.start();
         document.body.appendChild(myQRReader.canvas);
+
+        $('select').selectpicker('refresh');
     })
     .catch(err => console.error(err));
 
