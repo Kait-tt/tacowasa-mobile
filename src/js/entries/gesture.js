@@ -1,424 +1,131 @@
-﻿'use strict';
+'use strict';
 require('babel-polyfill');
 require('jquery.transit');
 require('../../scss/kanban.scss');
-
-const _ = require('lodash');
-const qrread = require('./qrread');
-
+const Util = require('../modules/util');
 const Project = require('../models/project');
 const Socket = require('../models/socket');
+const Kanban = require('../viewmodels/kanban');
+const MyQRReader = require('../models/myqrreader');
+const DeviceMotion = require('../models/device_motion');
+const TouchContent = require('../models/touch_content');
 
-let project, socket;
+const {projectId} = Util.parseURLQuery();
 
-const multiple_scroll = 100;
+let project, socket, kanban;
 
+const scrollK = 20;
+let isCatch = false;
+let qrNum;
 
-// 要素ら
+const $hitArea = document.getElementById('hitarea');
+const $eventName = document.getElementById('eventname');
+const $userList = document.getElementById('userlist');
+const $taskNum = document.getElementById('task-num');
 
-var el_hitarea = document.getElementById('hitarea');
-var el_eventname = document.getElementById('eventname');
-var el_x = document.getElementById('x');
-var el_y = document.getElementById('y');
+const myQRReader = new MyQRReader({lastQRsSize: 20, binThreshold: 125});
+const deviceMotion = new DeviceMotion({threshold: 7, sleepTime: 1000});
+const touchContent = new TouchContent($hitArea);
+socket = new Socket();
 
-var isMotion = false;
-var isCatch = false;
-// 表示をアップデートする関数群
-
-var didFirstTap = false;
-
-var updateXY = function(event) {
-    el_x.innerHTML = event.changedTouches[0].pageX;
-    el_y.innerHTML = event.changedTouches[0].pageY;
-};
-var updateEventname = function(eventname) {
-    el_eventname.innerHTML = eventname;
-};
-
-
-
-//emit hover pick
-
-var didqr;
-
-var content = null;
-$(document).ready(function() {
-    $('#sample').on('DOMSubtreeModified propertychange', function() {
-        alert('Change!');
-    });
-    $('#click_me').click(function() {
-        $('#sample').text('Change!');
-    });
-});
-
-let recognituionTimeoutId = null;
-qrread.events.on('recognition', ({ data }) => {
-    if (!isCatch && didqr !== data) {
-        didqr = data;
-        socket.emit('qrHover', { taskId: Number(didqr) });
-
-        if (recognituionTimeoutId) {
-            clearTimeout(recognituionTimeoutId);
-        }
-
-        recognituionTimeoutId = setTimeout(() => {
-            data = null;
-            socket.emit('qrHover', { taskId: null });
-        }, 5000);
-    }
-});
-
-
-el_hitarea.addEventListener('touchstart', function(event) {
-    event.preventDefault();
-
-    if (!didFirstTap) {
-
-        didFirstTap = true;
-
-
-        setTimeout(function() {
-            didFirstTap = false;
-        }, 350);
-    } else {
-        console.log("ダブルタップ");
-        if (didqr) {
-            location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId=" + didqr;
-        } else {
-            console.log("qrコードを認識してください")
-        }
-
-        didFirstTap = false;
-    }
-
-    if (didqr) {
-        updateEventname('Catch');
-        el_hitarea.style.backgroundColor = 'red';
-        isCatch = true;
-        socket.emit('qrPick', {taskId: Number(didqr)});
-    }　else {
-        el_hitarea.style.backgroundColor = 'blue';
-        updateEventname('Qr reading required');
-        isCatch = false;
-        socket.emit('qrPick', {taskId: null});
-    }
-
-}, false);
-
-el_hitarea.addEventListener('touchmove', function(event) {
-    event.preventDefault();
-    var didy= el_y.textContent;
-    var didx =el_x.textContent;
-    var dify = event.changedTouches[0].pageY;
-    var difx = event.changedTouches[0].pageX;
-
-    var center = new Vector(270,470);
-    var firstP = new Vector(didx,didy);
-    var afterP = new Vector(difx,dify);
-    var dist = Vector.calc_length(firstP,center,afterP) * multiple_scroll;
-
-    updateXY(event);
-
-
-    if (didqr) {
-        var qrid = didqr;
-        const task = project.tasks.find(x => String(x.id) === qrid);
-
-        updateEventname('swipe');
-        el_hitarea.style.backgroundColor = 'yellow';
-        isCatch = true;
-
-        socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist});
-    }　else {
-        updateEventname('touchmove');
-        el_hitarea.style.backgroundColor = 'blue';
-        isCatch = false;
-
-        socket.emit('qrScrollUser', {dy: dist});
-    }
-}, false);
-
-el_hitarea.addEventListener('touchend', function(event) {
-    updateEventname('touchend');
-    updateXY(event);
-    el_hitarea.style.backgroundColor = 'blue';
-    isCatch = false;
-    socket.emit('qrPick', {taskId: null});
-}, false);
-
-
-class Vector{
-    constructor(x,y){
-        this.x = x;
-        this.y = y;
-    }
-    static diff(v1,v2){
-        var retX = v1.x - v2.x;
-        var retY = v1.y - v2.y;
-        var ret = new Vector(retX, retY);
-        return ret;
-    }
-    static dot(v1,v2){
-        return v1.x * v2.x + v1.y * v2.y;
-    }
-    static cross(v1,v2){
-        return v1.x * v2.y - v1.y * v2.x;
-    }
-    get norm() {
-        return Math.sqrt(Vector.dot(this, this));
-    }
-    static calc_length(p1, p2, p3){
-        var ca = Vector.diff(p1,p2);
-        var cb = Vector.diff(p3,p2);
-        var s = Vector.cross(ca,cb);//0より大きいと左
-        var na = p1.norm;
-        var nb = p2.norm;
-        // var theta = Math.asin(s / (na * nb));
-        var theta = Math.sign(Math.asin(Vector.cross(ca,cb) / ca.norm / cb.norm )) * Math.sqrt(Vector.diff(p1,p3).norm);
-        return theta;
-
-        // if(s<=0){
-        //     theta = theta * -1;
-        // }
-        // return (180 / 3.14) * theta;
-        //return theta * 5;
-    }
+function updateEventname (eventname) {
+    $eventName.innerHTML = eventname;
 }
 
-
-
-
-Project.fetch(getProjectId())
+Project.fetch(projectId)
     .then(_project => {
         project = _project;
-        socket = new Socket();
-        socket.join(project.id);
-        socketInit();
+        kanban = new Kanban(project, socket);
 
-        project.users;
-        project.labels;
-
-        var user = [];
-
-        for (var i in project.users) {
-            user.push(project.users[i].username);
-        }
-
-
-        $(function() {
-            var count, d, plist;
-            for (count = 0; count < user.length; count++) {
-                plist = $('<option>').html(user[count]).val(user[count]);
-                $("#userlist").append(plist);
-            }
+        project.users.forEach(user => {
+            const $item = document.createElement('option');
+            $item.innerText = user.username;
+            $item.value = user.username;
+            $userList.append($item);
         });
 
+        myQRReader.start();
+        document.body.appendChild(myQRReader.canvas);
     })
     .catch(err => console.error(err));
 
+// QR Reader
+myQRReader.on('recognized', ({qrs, qr, lastNum}) => {
+    if (!isCatch && qrNum !== lastNum) {
+        qrNum = lastNum;
+        $taskNum.innerText = lastNum;
+        socket.emit('qrHover', { taskId: qrNum === null ? null : Number(qrNum) });
+    }
+});
+
+// Touch Events
+touchContent.on('touchStart', ({e}) => {
+    if (qrNum) {
+        updateEventname('Catch');
+        $hitArea.style.backgroundColor = 'red';
+
+        isCatch = true;
+        socket.emit('qrPick', {taskId: Number(qrNum)});
+    } else {
+        $hitArea.style.backgroundColor = 'blue';
+        updateEventname('Qr reading required');
+
+        isCatch = false;
+        socket.emit('qrPick', {taskId: null});
+    }
+});
+
+touchContent.on('touchEnd', ({e}) => {
+    updateEventname('touchend');
+    $hitArea.style.backgroundColor = 'blue';
+
+    isCatch = false;
+    socket.emit('qrPick', {taskId: null});
+});
+
+touchContent.on('touchDouble', ({e}) => {
+    if (qrNum) {
+        location.href = `/mobile/edit?projectId=${projectId}&taskId=${qrNum}`;
+    } else {
+        console.log('qrコードを認識してください');
+    }
+});
+
+touchContent.on('moveCircle', ({dist}) => {
+    if (qrNum) {
+        updateEventname('swipe');
+        $hitArea.style.backgroundColor = 'yellow';
+
+        const task = project.tasks.find(x => String(x.id) === String(qrNum));
+        if (!task) { return; }
+        socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist * scrollK});
+    } else {
+        updateEventname('touchmove');
+        $hitArea.style.backgroundColor = 'blue';
+
+        socket.emit('qrScrollUser', {dy: dist * scrollK});
+    }
+});
+
 // DeviceMotion Event
-window.addEventListener("devicemotion", devicemotionHandler, false);
+deviceMotion.on('right', () => {
+    if (!isCatch) { return; }
+    const selectUsername = $userList.value;
+    kanban.stepStage(qrNum, selectUsername, 1);
+});
 
-function Edit_task(event) {
-    if (didqr) {
-        location.href = "/mobile/edit?projectId=lFs5L08Gugfi&taskId=" + didqr;
-    } else {
-        alert("タスクのQRコードを認識してください");
-    }
-}
+deviceMotion.on('left', () => {
+    if (!isCatch) { return; }
+    const selectUsername = $userList.value;
+    kanban.stepStage(qrNum, selectUsername, -1);
+});
 
+deviceMotion.on('back', () => {
+    if (!isCatch) { return; }
+    kanban.stepAssign(qrNum, -1);
+});
 
-const moveStageDebounced = _.debounce(moveStage, 1000);
-
-// 加速度が変化
-function devicemotionHandler(event) {
-    if (isCatch && !isMotion) {
-        const l = 7;
-        const {x, y} = event.acceleration;
-        console.log(x, y);
-
-        if (x > l) {
-            moveStageDebounced('right');
-        } else if (x < -l) {
-            moveStageDebounced('left');
-        } else if (y > l) {
-            moveStageDebounced('up');
-        } else if (y < -l) {
-            moveStageDebounced('down');
-        } else {
-            return;
-        }
-    }
-}
-
-function moveStage(dir) {
-    if (dir === 'right') { right(); }
-    else if (dir === 'left')  { left(); }
-    else if (dir === 'down')  { down(); }
-    else { return; }
-
-    isMotion = true;
-    setTimeout(() => { isMotion = false; }, 2000);
-}
-
-function right() {
-    console.log("right");
-    var qrid = didqr;
-    const task = project.tasks.find(x => String(x.id) === qrid);
-    const currentStage = project.stages.find(x => x.id === task.stageId);
-    const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
-    const currentPos = stageNames.indexOf(currentStage.name);
-    const afterPos = currentPos + 1;
-
-    var username = document.getElementById("userlist").value;
-    const selectUser = project.users.find(x => x.username === username);
-
-    if (afterPos >= stageNames.length) {
-        // 次のステージには行けない
-    }
-    const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
-
-    let afterUserId;
-    if (afterStage.assigned) {
-        if (task.userId == null) {
-            afterUserId = selectUser.id;
-        } else {
-            afterUserId = task.userId;
-        }
-    } else {
-        afterUserId = null;
-    }
-    socket.emit('updateTaskStatusAndOrder', {
-        taskId: qrid,
-        updateParams: {
-            stageId: afterStage.id,
-            userId: afterUserId
-        }
-    });
-}
-
-function left() {
-    console.log("left");
-    var qrid = didqr;
-    const task = project.tasks.find(x => String(x.id) === qrid);
-    const currentStage = project.stages.find(x => x.id === task.stageId);
-    const stageNames = ['issue', 'backlog', 'todo', 'doing', 'review', 'done'];
-    const currentPos = stageNames.indexOf(currentStage.name);
-    const afterPos = currentPos - 1;
-    if (afterPos == 0) {
-        // 次のステージには行けない
-    }
-    const afterStage = project.stages.find(x => x.name === stageNames[afterPos]);
-
-    let afterUserId;
-    if (afterStage.assigned) {
-        if (currentStage.assigned) {
-            afterUserId = task.userId;
-        } else {
-            // アサインする場合
-        }
-    } else {
-        afterUserId = null;
-    }
-
-    socket.emit('updateTaskStatusAndOrder', {
-        taskId: qrid,
-        updateParams: {
-            stageId: afterStage.id,
-            userId: afterUserId
-        }
-    });
-
-}
-
-function down(){
-    console.log("down");
-
-    var qrid = didqr;
-    const task = project.tasks.find(x => String(x.id) === qrid);
-    const currentStage = project.stages.find(x => x.id === task.stageId);
-
-    var username = document.getElementById("userlist").value;
-    const user = project.users.find(x => x.username === username);
-    let nextUserId = null;
-    if (!user.nextMemberId) {
-        const nextUser = project.users.find(x => x.member.id === user.member.nextMemberId);
-        nextUserId = nextUser.id;
-    }
-    socket.emit('updateTaskStatusAndOrder', {
-        taskId: qrid,
-        updateParams: {
-            stageId: currentStage.id,
-            userId: nextUserId
-        }
-    });
-}
-
-function socketInit() {
-    socket.on('createTask', ({ task }) => project.tasks.push(task));
-
-    socket.on('archiveTask', ({ task }) => {
-        project.tasks.find(x => x.id === task.id).stageId = task.stageId;
-    });
-
-    socket.on('updateTaskStatus', ({ task: _task }) => {
-        const task = project.tasks.find(x => x.id === _task.id);
-        task.stageId = _task.stageId;
-        task.userId = _task.userId;
-    });
-
-    socket.on('updateTaskStatusAndOrder', ({ task: _task }) => {
-        const task = project.tasks.find(x => x.id === _task.id);
-        task.stageId = _task.stageId;
-        task.userId = _task.userId;
-    });
-
-    socket.on('updateTaskContent', ({ task: _task }) => {
-        const task = project.tasks.find(x => x.id === _task.id);
-        task.title = _task.title;
-        task.body = _task.body;
-        task.costId = _task.costId;
-    });
-
-    socket.on('updateTaskWorkingState', ({ task, isWorking }) => {
-        project.tasks.find(x => x.id === task.id).isWorking = isWorking;
-    });
-
-    socket.on('attachLabel', ({ task, label }) => {
-        project.tasks.find(x => x.id === task.id).labels = task.labels;
-    });
-
-    socket.on('detachLabel', ({ task, label }) => {
-        project.tasks.find(x => x.id === task.id).labels = task.labels;
-    });
-
-    socket.on('error', () => {
-        console.error('ソケットが接続できませんでした。');
-    });
-
-    socket.on('reconnect', () => {
-        console.debug('ソケットを再接続しました。');
-    });
-
-    socket.on('disconnect', () => {
-        console.error('ソケットが切断されました。');
-    });
-
-    socket.on('reconnect_error', () => {
-        console.error('ソケットを再接続しています。');
-    });
-
-    socket.on('operationError', res => {
-        console.error('操作エラー', res);
-    });
-}
-
-function getProjectId() {
-    const search = location.search;
-    if (!search) {
-        return null;
-    }
-    const qs = search.slice(1).split('&').map(q => q.split('='));
-    const q = qs.find(x => x.length && x[0] === 'projectId');
-    return q && q.length > 1 && q[1] || null;
-}
+deviceMotion.on('front', () => {
+    if (!isCatch) { return; }
+    kanban.stepAssign(qrNum, 1);
+});

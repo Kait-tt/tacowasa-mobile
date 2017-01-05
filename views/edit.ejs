@@ -1,32 +1,28 @@
 <html>
 <head>
-	<meta name="viewport" content="width=device-width" initial-scale=0.75"" charset="utf-8">
-	<title>Edit</title>
-	<script src="common.js"></script>
-	<script src ="edit.js"></script>
+  <meta name="viewport" content="width=device-width, initial-scale=0.75" charset="utf-8">
+  <title>Edit</title>
 </head>
 <body>
-	<h1>task edit</h1>
-	<p id = "TTT">タイトル
-		<INPUT size="20" id="taskname" type="text" value="">
-	</p>
-	<p>説明　　
-		<INPUT size="20" id="description" type="text">
-	</p>
-	<p>Cost　　
-		<select id="cost">
-			<option value="undecided" selected>undecided</option>
-			<option value="low" selected>low</option>
-			<option value="medium">medium</option>
-			<option value="high">high</option>
-		</select>
-	</p>
+
+<h1>task edit</h1>
+<p>タイトル</p>
+<input size="20" id="title" type="text" value="">
 
 
-<!-- 	<p>ラベル</p>
-	<p id =labellist></p>
- -->
-	<p>
-	<button id="edit-task">Create Task</button>
-	</p>
+<p>説明</p>
+<input size="20" id="description" type="text">
+
+<p>Cost</p>
+<select id="cost"></select>
+
+<p>ラベル</p>
+<p id="labellist"></p>
+
+<p><button id="update-task">Update Task</button></p>
+
+<script src="common.js"></script>
+<script src ="edit.js"></script>
+
 </body>
+</html>
