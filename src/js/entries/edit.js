@@ -22,6 +22,9 @@ const $labelList = $('#labellist');
 
 const $updateTask = $('#update-task');
 
+const $cancelButton = $('#cancel');
+$cancelButton.attr('href', $cancelButton.attr('href') + `?projectId=${projectId}`);
+
 Project.fetch(projectId)
     .then(_project => {
         project = _project;
