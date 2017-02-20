@@ -2,7 +2,7 @@
 const EventEmitter2 = require('eventemitter2');
 
 class DeviceMotion extends EventEmitter2 {
-    constructor ({threshold = 7, sleepTime = 1000} = {}, eventEmitterOptions = {}) {
+    constructor ({threshold = 7, threshold2 = 5, sleepTime = 1000} = {}, eventEmitterOptions = {}) {
         super(eventEmitterOptions);
         this.threshold = threshold;
         this.sleepTime = sleepTime;
@@ -17,13 +17,15 @@ class DeviceMotion extends EventEmitter2 {
     }
 
     onDeviceMotion (e) {
-        // this.emit('deviceMotion', {e});
+        this.emit('deviceMotion', {e});
 
         if (this.isMotion) { return; }
 
         const {x, y, z} = e.acceleration;
+        const {a, b, g} = e.rotationRate;
 
         const l = this.threshold;
+        const l2 = this.threshold2;
         if (x > l) {
             this.emit('right', {});
         } else if (x < -l) {
@@ -32,9 +34,9 @@ class DeviceMotion extends EventEmitter2 {
             this.emit('up', {});
         } else if (y < -l) {
             this.emit('down', {});
-        } else if (z > l) {
+        } else if (a > l2) {
             this.emit('front', {});
-        } else if (z < -l) {
+        } else if (a < l2) {
             this.emit('back', {});
         } else {
             return;
