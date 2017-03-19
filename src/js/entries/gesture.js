@@ -87,7 +87,7 @@ touchContent.on('moveCircle', ({dist}) => {
 
         const task = project.tasks.find(x => String(x.id) === String(qrNum));
         if (!task) { return; }
-        const stage = project.stages.find(x => x.id === x.stageId);
+        const stage = project.stages.find(x => x.id === task.stageId);
 
         if (stage.assigned) {
             socket.emit('qrScrollUser', {dy: dist * scrollK});

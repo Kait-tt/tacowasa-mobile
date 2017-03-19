@@ -3,13 +3,16 @@ const EventEmitter2 = require('eventemitter2');
 const Vector = require('../models/vector');
 
 class TouchContent extends EventEmitter2 {
-    constructor (context, {sleepFirstTocuh = 350} = {}, eventEmitterOptions = {}) {
+    constructor (context, {sleepFirstTocuh = 350, skipMoveDistance = 50} = {}, eventEmitterOptions = {}) {
         super(eventEmitterOptions);
         this.context = context;
         this.moveBeforeX = null;
         this.moveBeforeY = null;
+        this.totalMoveDistance = 0;
+        this.skipMoveDistance = skipMoveDistance;
         this.firstTouch = true;
         this.sleepFirstTocuh = sleepFirstTocuh;
+        this.center = {x: this.context.clientWidth / 2, y: this.context.clientHeight / 2};
         this.initEvents();
     }
 
@@ -25,6 +28,7 @@ class TouchContent extends EventEmitter2 {
 
         this.moveBeforeX = null;
         this.moveBeforeY = null;
+        this.totalMoveDistance = 0;
 
         if (this.firstTouch) {
             this.firstTouch = false;
@@ -47,12 +51,17 @@ class TouchContent extends EventEmitter2 {
         const {pageX: x, pageY: y} = e.changedTouches[0];
 
         if (this.moveBeforeX && this.moveBeforeY) {
-            const centerP = new Vector(270, 470); // TODO: fix position
+            const centerP = new Vector(this.center.x, this.center.y);
             const beforeP = new Vector(this.moveBeforeX, this.moveBeforeY);
             const afterP = new Vector(x, y);
             const dist = Vector.calcMoveAngle(beforeP, afterP, centerP);
+            this.totalMoveDistance += dist;
 
-            this.emit('moveCircle', {dist});
+            if (this.totalMoveDistance > this.skipMoveDistance) {
+                this.totalMoveDistance = Infinity;
+                this.emit('moveCircle', {dist});
+            }
+
         }
 
         ([this.moveBeforeX, this.moveBeforeY] = [x, y]);
