@@ -23,7 +23,9 @@ const $labelList = $('#labellist');
 const $updateTask = $('#update-task');
 
 const $cancelButton = $('#cancel');
-$cancelButton.attr('href', $cancelButton.attr('href') + `?projectId=${projectId}`);
+
+const homeURL = $cancelButton.attr('href') + `?projectId=${projectId}`;
+$cancelButton.attr('href', homeURL);
 
 Project.fetch(projectId)
     .then(_project => {
@@ -91,4 +93,6 @@ function onClickUpdateButton () {
             labelId: labelId
         });
     });
+
+    location.href = homeURL;
 }

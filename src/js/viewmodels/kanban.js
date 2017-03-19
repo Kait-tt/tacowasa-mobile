@@ -53,11 +53,11 @@ class Kanban {
 
         let user = users.find(x => x.id === task.userId);
         const stepKey = step > 0 ? 'nextMemberId' : 'prevMemberId';
-        // TODO: check WIP
         while (user) {
             const memberId = user.member[stepKey];
             if (!memberId) { break; }
-            user = users.find(x => x.member.memberId === memberId);
+            user = users.find(x => x.member.id === memberId);
+            break; // TODO: check WIP
         }
 
         if (!user) { return; }

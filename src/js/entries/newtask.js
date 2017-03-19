@@ -22,7 +22,9 @@ const $labelList = $('#labellist');
 const $createTask = $('#create-task');
 
 const $cancelButton = $('#cancel');
-$cancelButton.attr('href', $cancelButton.attr('href') + `?projectId=${projectId}`);
+
+const homeURL = $cancelButton.attr('href') + `?projectId=${projectId}`;
+$cancelButton.attr('href', homeURL);
 
 Project.fetch(projectId)
     .then(_project => {
@@ -74,4 +76,6 @@ function onClickCreateButton () {
         costId: cost.id,
         labelIds: labels.map(x => x.id)
     });
+
+    location.href = homeURL;
 }

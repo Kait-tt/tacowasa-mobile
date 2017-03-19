@@ -5,6 +5,7 @@ class DeviceMotion extends EventEmitter2 {
     constructor ({threshold = 7, threshold2 = 5, sleepTime = 1000} = {}, eventEmitterOptions = {}) {
         super(eventEmitterOptions);
         this.threshold = threshold;
+        this.threshold2 = threshold2;
         this.sleepTime = sleepTime;
         this.isMotion = false;
         this.initEvents();
@@ -22,7 +23,7 @@ class DeviceMotion extends EventEmitter2 {
         if (this.isMotion) { return; }
 
         const {x, y, z} = e.acceleration;
-        const {a, b, g} = e.rotationRate;
+        const {alpha: a, beta: b, gamma: g} = e.rotationRate;
 
         const l = this.threshold;
         const l2 = this.threshold2;
@@ -30,13 +31,13 @@ class DeviceMotion extends EventEmitter2 {
             this.emit('right', {});
         } else if (x < -l) {
             this.emit('left', {});
-        } else if (y > l) {
-            this.emit('up', {});
-        } else if (y < -l) {
-            this.emit('down', {});
+        // } else if (y > l) {
+        //     this.emit('up', {});
+        // } else if (y < -l) {
+        //     this.emit('down', {});
         } else if (a > l2) {
             this.emit('front', {});
-        } else if (a < l2) {
+        } else if (a < -l2) {
             this.emit('back', {});
         } else {
             return;

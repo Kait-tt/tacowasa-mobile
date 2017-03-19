@@ -37,7 +37,7 @@ Project.fetch(projectId)
         topUsername = project.users.find(x => !x.member.prevMemberId).username;
 
         myQRReader.start();
-        document.body.appendChild(myQRReader.canvas);
+        // document.body.appendChild(myQRReader.canvas);
 
         $('select').selectpicker('refresh');
     })
@@ -47,7 +47,6 @@ Project.fetch(projectId)
 myQRReader.on('recognized', ({qrs, qr, lastNum}) => {
     if (!isCatch && qrNum !== lastNum) {
         qrNum = lastNum;
-        $taskNum.innerText = lastNum;
         socket.emit('qrHover', { taskId: qrNum === null ? null : Number(qrNum) });
     }
 });
@@ -88,7 +87,13 @@ touchContent.on('moveCircle', ({dist}) => {
 
         const task = project.tasks.find(x => String(x.id) === String(qrNum));
         if (!task) { return; }
-        socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist * scrollK});
+        const stage = project.stages.find(x => x.id === x.stageId);
+
+        if (stage.assigned) {
+            socket.emit('qrScrollUser', {dy: dist * scrollK});
+        } else {
+            socket.emit('qrScrollStage', {stageId: task.stageId, dy: dist * scrollK});
+        }
     } else {
         $hitArea.style.backgroundColor = 'blue';
 

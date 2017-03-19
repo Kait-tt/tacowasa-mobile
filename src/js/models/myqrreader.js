@@ -49,21 +49,20 @@ class MyQRReader extends EventEmitter2 {
     }
 
     startVideoStream (mediaOpts = {}) {
-        return new Promise((resolve, reject) => {
-            if (navigator.mediaDevices && MediaStreamTrack) {
-                MediaStreamTrack.getSources(data => {
-                    const cameras = data.filter(x => x.kind === 'video');
-                    if (!cameras.length) { return reject('camera devices is not found'); }
-                    const backCamera = cameras.find(x => x.facing === 'environment');
+        if (!navigator.mediaDevices) {
+            return Promise.reject('Your browser do not support MediaDevices or MediaStreamTrack');
+        }
 
-                    const optional = [{sourceId: backCamera ? backCamera.id : cameras[0].id}];
-                    const hdConstraints = this.createHdConstraints(Object.assign({optional}, mediaOpts));
-                    return resolve(hdConstraints);
-                });
-            } else {
-                return reject('Your browser do not support MediaDevices or MediaStreamTrack');
-            }
-        }).then(hdConstraints => navigator.mediaDevices.getUserMedia(hdConstraints));
+        return navigator.mediaDevices.enumerateDevices()
+            .then(data => {
+                const cameras = data.filter(x => /video/.test(x.kind));
+                if (!cameras.length) { return Promise.reject('camera devices is not found'); }
+
+                const backCamera = cameras.find(x => /back/.test(x.label));
+                const optional = [{sourceId: backCamera ? backCamera.deviceId : cameras[0].deviceId}];
+                const hdConstraints = this.createHdConstraints(Object.assign({optional}, mediaOpts));
+                return navigator.mediaDevices.getUserMedia(hdConstraints);
+            });
     }
 
     onGetUserMedia (stream) {
